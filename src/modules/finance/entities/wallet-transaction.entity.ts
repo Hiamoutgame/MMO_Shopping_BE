@@ -20,11 +20,11 @@ import { Wallet } from './wallet.entity';
 @Index('idx_wallet_transactions_wallet_id', ['walletId'])
 export class WalletTransaction extends UuidEntity {
   @Column({ name: 'wallet_id', type: 'uuid' })
-  walletId: string;
+  walletId!: string;
 
   @ManyToOne(() => Wallet, (wallet) => wallet.transactions)
   @JoinColumn({ name: 'wallet_id' })
-  wallet: Wallet;
+  wallet!: Wallet;
 
   @Column({ name: 'order_id', type: 'uuid', nullable: true })
   orderId?: string | null;
@@ -48,30 +48,35 @@ export class WalletTransaction extends UuidEntity {
     type: 'enum',
     enum: WalletTransactionType,
   })
-  type: WalletTransactionType;
+  type!: WalletTransactionType;
 
   @Column({ type: 'numeric', precision: 19, scale: 4 })
-  amount: string;
+  amount!: string;
 
   @Column({ name: 'balance_before', type: 'numeric', precision: 19, scale: 4 })
-  balanceBefore: string;
+  balanceBefore!: string;
 
   @Column({ name: 'balance_after', type: 'numeric', precision: 19, scale: 4 })
-  balanceAfter: string;
+  balanceAfter!: string;
 
   @Column({
     type: 'enum',
     enum: WalletTransactionStatus,
     default: WalletTransactionStatus.COMPLETED,
   })
-  status: WalletTransactionStatus;
+  status!: WalletTransactionStatus;
 
-  @Column({ name: 'idempotency_key', type: 'varchar', length: 100, unique: true })
-  idempotencyKey: string;
+  @Column({
+    name: 'idempotency_key',
+    type: 'varchar',
+    length: 100,
+    unique: true,
+  })
+  idempotencyKey!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }

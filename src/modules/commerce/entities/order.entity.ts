@@ -23,11 +23,11 @@ import { Voucher } from './voucher.entity';
 @Index('idx_orders_status', ['status'])
 export class Order extends AuditableEntity {
   @Column({ name: 'account_id', type: 'uuid' })
-  accountId: string;
+  accountId!: string;
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id' })
-  account: Account;
+  account!: Account;
 
   @Column({ name: 'voucher_id', type: 'uuid', nullable: true })
   voucherId?: string | null;
@@ -37,14 +37,14 @@ export class Order extends AuditableEntity {
   voucher?: Voucher | null;
 
   @Column({ name: 'order_number', type: 'varchar', length: 32, unique: true })
-  orderNumber: string;
+  orderNumber!: string;
 
   @Column({
     type: 'enum',
     enum: OrderStatus,
     default: OrderStatus.PENDING,
   })
-  status: OrderStatus;
+  status!: OrderStatus;
 
   @Column({
     name: 'payment_status',
@@ -52,10 +52,10 @@ export class Order extends AuditableEntity {
     enum: PaymentStatus,
     default: PaymentStatus.PENDING,
   })
-  paymentStatus: PaymentStatus;
+  paymentStatus!: PaymentStatus;
 
   @Column({ type: 'numeric', precision: 19, scale: 4 })
-  subtotal: string;
+  subtotal!: string;
 
   @Column({
     name: 'discount_amount',
@@ -64,17 +64,17 @@ export class Order extends AuditableEntity {
     scale: 4,
     default: '0',
   })
-  discountAmount: string;
+  discountAmount!: string;
 
   @Column({ name: 'total_amount', type: 'numeric', precision: 19, scale: 4 })
-  totalAmount: string;
+  totalAmount!: string;
 
   @Column({ type: 'char', length: 3, default: 'VND' })
-  currency: string;
+  currency!: string;
 
   @CreateDateColumn({ name: 'placed_at', type: 'timestamptz' })
-  placedAt: Date;
+  placedAt!: Date;
 
   @OneToMany(() => OrderItem, (item) => item.order)
-  items: OrderItem[];
+  items!: OrderItem[];
 }

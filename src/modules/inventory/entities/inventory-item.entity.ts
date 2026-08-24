@@ -10,11 +10,11 @@ import { InventoryStatus } from '../enums/inventory-status.enum';
 @Index('idx_inventory_items_order_item_id', ['orderItemId'])
 export class InventoryItem extends AuditableEntity {
   @Column({ name: 'product_variant_id', type: 'uuid' })
-  productVariantId: string;
+  productVariantId!: string;
 
   @ManyToOne(() => ProductVariant)
   @JoinColumn({ name: 'product_variant_id' })
-  productVariant: ProductVariant;
+  productVariant!: ProductVariant;
 
   @Column({ name: 'order_item_id', type: 'uuid', nullable: true })
   orderItemId?: string | null;
@@ -24,14 +24,14 @@ export class InventoryItem extends AuditableEntity {
   orderItem?: OrderItem | null;
 
   @Column({ name: 'encrypted_payload', type: 'text' })
-  encryptedPayload: string;
+  encryptedPayload!: string;
 
   @Column({
     type: 'enum',
     enum: InventoryStatus,
     default: InventoryStatus.AVAILABLE,
   })
-  status: InventoryStatus;
+  status!: InventoryStatus;
 
   @Column({ name: 'reserved_until', type: 'timestamptz', nullable: true })
   reservedUntil?: Date | null;

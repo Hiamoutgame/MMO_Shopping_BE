@@ -6,12 +6,12 @@ import { CartItem } from './cart-item.entity';
 @Entity('carts')
 export class Cart extends AuditableEntity {
   @Column({ name: 'account_id', type: 'uuid', unique: true })
-  accountId: string;
+  accountId!: string;
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id' })
-  account: Account;
+  account!: Account;
 
   @OneToMany(() => CartItem, (item) => item.cart)
-  items: CartItem[];
+  items!: CartItem[];
 }

@@ -9,26 +9,26 @@ import { Product } from './product.entity';
 @Index('idx_product_variants_product_id', ['productId'])
 export class ProductVariant extends SoftDeletableEntity {
   @Column({ name: 'product_id', type: 'uuid' })
-  productId: string;
+  productId!: string;
 
   @ManyToOne(() => Product, (product) => product.variants)
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product!: Product;
 
   @Column({ type: 'varchar', length: 100, unique: true })
-  sku: string;
+  sku!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  name: string;
+  name!: string;
 
   @Column({ type: 'numeric', precision: 19, scale: 4 })
-  price: string;
+  price!: string;
 
   @Column({ name: 'fulfillment_type', type: 'enum', enum: FulfillmentType })
-  fulfillmentType: FulfillmentType;
+  fulfillmentType!: FulfillmentType;
 
   @Column({ type: 'enum', enum: VariantStatus, default: VariantStatus.ACTIVE })
-  status: VariantStatus;
+  status!: VariantStatus;
 
   @Column({ type: 'jsonb', nullable: true })
   attributes?: Record<string, any> | null;

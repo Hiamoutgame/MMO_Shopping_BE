@@ -19,20 +19,20 @@ import { Order } from './order.entity';
 @Check('chk_vouchers_used_count', 'used_count >= 0')
 export class Voucher extends SoftDeletableEntity {
   @Column({ type: 'varchar', length: 50, unique: true })
-  code: string;
+  code!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  name: string;
+  name!: string;
 
   @Column({
     name: 'discount_type',
     type: 'enum',
     enum: DiscountType,
   })
-  discountType: DiscountType;
+  discountType!: DiscountType;
 
   @Column({ name: 'discount_value', type: 'numeric', precision: 19, scale: 4 })
-  discountValue: string;
+  discountValue!: string;
 
   @Column({
     name: 'minimum_order_amount',
@@ -53,23 +53,23 @@ export class Voucher extends SoftDeletableEntity {
   maximumDiscountAmount?: string | null;
 
   @Column({ name: 'usage_limit', type: 'int' })
-  usageLimit: number;
+  usageLimit!: number;
 
   @Column({ name: 'per_account_limit', type: 'int', default: 1 })
-  perAccountLimit: number;
+  perAccountLimit!: number;
 
   @Column({ name: 'used_count', type: 'int', default: 0 })
-  usedCount: number;
+  usedCount!: number;
 
   @Column({ name: 'starts_at', type: 'timestamptz' })
-  startsAt: Date;
+  startsAt!: Date;
 
   @Column({ name: 'ends_at', type: 'timestamptz' })
-  endsAt: Date;
+  endsAt!: Date;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @OneToMany(() => Order, (order) => order.voucher)
-  orders: Order[];
+  orders!: Order[];
 }

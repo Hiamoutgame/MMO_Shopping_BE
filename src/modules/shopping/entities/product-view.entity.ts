@@ -22,15 +22,15 @@ export class ProductView extends UuidEntity {
   account?: Account | null;
 
   @Column({ name: 'product_id', type: 'uuid' })
-  productId: string;
+  productId!: string;
 
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product!: Product;
 
   @Column({ name: 'session_id', type: 'varchar', length: 100, nullable: true })
   sessionId?: string | null;
 
   @CreateDateColumn({ name: 'viewed_at', type: 'timestamptz' })
-  viewedAt: Date;
+  viewedAt!: Date;
 }

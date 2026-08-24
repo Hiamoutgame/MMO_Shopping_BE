@@ -6,9 +6,7 @@ import { Favorite } from './entities/favorite.entity';
 import { ProductView } from './entities/product-view.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Cart, CartItem, Favorite, ProductView]),
-  ],
+  imports: [TypeOrmModule.forFeature([Cart, CartItem, Favorite, ProductView])],
   exports: [TypeOrmModule],
 })
 export class ShoppingModule {}

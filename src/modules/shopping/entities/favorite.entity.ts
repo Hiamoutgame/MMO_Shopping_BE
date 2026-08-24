@@ -14,19 +14,19 @@ import { Account } from '../../identity/entities/account.entity';
 @Unique('uq_favorites_account_product', ['accountId', 'productId'])
 export class Favorite extends UuidEntity {
   @Column({ name: 'account_id', type: 'uuid' })
-  accountId: string;
+  accountId!: string;
 
   @ManyToOne(() => Account, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'account_id' })
-  account: Account;
+  account!: Account;
 
   @Column({ name: 'product_id', type: 'uuid' })
-  productId: string;
+  productId!: string;
 
   @ManyToOne(() => Product, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product!: Product;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }

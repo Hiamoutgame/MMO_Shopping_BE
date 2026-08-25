@@ -1,0 +1,7 @@
+export enum SupportTicketStatus {
+  OPEN = 'OPEN',
+  PENDING_ADMIN = 'PENDING_ADMIN',
+  PENDING_USER = 'PENDING_USER',
+  RESOLVED = 'RESOLVED',
+  CLOSED = 'CLOSED',
+}

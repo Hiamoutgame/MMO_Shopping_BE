@@ -1,0 +1,8 @@
+export enum SupportCodeRequestStatus {
+  ACTIVE = 'ACTIVE',
+  PROCESSING = 'PROCESSING',
+  SUCCESS = 'SUCCESS',
+  PARTIAL_SUCCESS = 'PARTIAL_SUCCESS',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+}

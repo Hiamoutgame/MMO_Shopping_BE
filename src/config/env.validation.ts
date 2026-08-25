@@ -1,5 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -36,12 +37,33 @@ export class EnvironmentVariables {
 
   @IsString()
   DB_DATABASE!: string;
+
+  @IsBoolean()
+  @IsOptional()
+  SWAGGER_ENABLED: boolean = true;
+
+  @IsString()
+  @IsOptional()
+  SWAGGER_PATH: string = 'api/docs';
+
+  @IsString()
+  @IsOptional()
+  SWAGGER_TITLE: string = 'MMO Shopping API';
+
+  @IsString()
+  @IsOptional()
+  SWAGGER_DESCRIPTION: string = 'API documentation for MMO Shopping backend';
+
+  @IsString()
+  @IsOptional()
+  SWAGGER_VERSION: string = '1.0.0';
 }
 
 export function validate(config: Record<string, unknown>) {
   const validatedConfig = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });
+  // console.log('validated config:', validatedConfig);
 
   const errors = validateSync(validatedConfig, {
     skipMissingProperties: false,

@@ -40,4 +40,7 @@ export class OrderItem extends AuditableEntity {
 
   @Column({ name: 'total_amount', type: 'numeric', precision: 19, scale: 4 })
   totalAmount!: string;
+
+  @Column({ name: 'warranty_expires_at', type: 'timestamptz', nullable: true })
+  warrantyExpiresAt?: Date | null;
 }

@@ -1,0 +1,7 @@
+export enum WarrantyClaimStatus {
+  REQUESTED = 'REQUESTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  FULFILLED = 'FULFILLED',
+  CANCELLED = 'CANCELLED',
+}

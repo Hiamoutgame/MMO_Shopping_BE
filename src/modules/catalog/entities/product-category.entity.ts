@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryColumn,
@@ -11,6 +12,10 @@ import { Category } from './category.entity';
 import { Product } from './product.entity';
 
 @Entity('product_categories')
+@Index('uq_product_categories_primary_per_product', ['productId'], {
+  unique: true,
+  where: '"is_primary" = true',
+})
 export class ProductCategory {
   @PrimaryColumn({ name: 'product_id', type: 'uuid' })
   productId!: string;

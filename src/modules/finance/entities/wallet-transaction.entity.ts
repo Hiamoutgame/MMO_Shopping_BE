@@ -18,6 +18,14 @@ import { Wallet } from './wallet.entity';
 @Check('chk_wallet_transactions_amount', 'amount > 0')
 @Check('chk_wallet_transactions_balance_after', 'balance_after >= 0')
 @Index('idx_wallet_transactions_wallet_id', ['walletId'])
+@Index(
+  'uq_wallet_transactions_payment_transaction_id',
+  ['paymentTransactionId'],
+  {
+    unique: true,
+    where: 'payment_transaction_id IS NOT NULL',
+  },
+)
 export class WalletTransaction extends UuidEntity {
   @Column({ name: 'wallet_id', type: 'uuid' })
   walletId!: string;

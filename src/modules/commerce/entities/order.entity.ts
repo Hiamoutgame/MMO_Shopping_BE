@@ -11,6 +11,7 @@ import {
 import { AuditableEntity } from '../../../common/base/auditable.entity';
 import { Account } from '../../identity/entities/account.entity';
 import { OrderStatus } from '../enums/order-status.enum';
+import { OrderType } from '../enums/order-type.enum';
 import { PaymentStatus } from '../enums/payment-status.enum';
 import { OrderItem } from './order-item.entity';
 import { Voucher } from './voucher.entity';
@@ -18,6 +19,7 @@ import { Voucher } from './voucher.entity';
 @Entity('orders')
 @Check('chk_orders_subtotal', 'subtotal >= 0')
 @Check('chk_orders_discount_amount', 'discount_amount >= 0')
+@Check('chk_orders_discount_not_gt_subtotal', 'discount_amount <= subtotal')
 @Check('chk_orders_total_amount', 'total_amount = subtotal - discount_amount')
 @Index('idx_orders_account_id', ['accountId'])
 @Index('idx_orders_status', ['status'])
@@ -38,6 +40,14 @@ export class Order extends AuditableEntity {
 
   @Column({ name: 'order_number', type: 'varchar', length: 32, unique: true })
   orderNumber!: string;
+
+  @Column({
+    name: 'order_type',
+    type: 'enum',
+    enum: OrderType,
+    default: OrderType.STANDARD,
+  })
+  orderType!: OrderType;
 
   @Column({
     type: 'enum',

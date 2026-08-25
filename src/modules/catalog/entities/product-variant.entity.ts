@@ -35,4 +35,7 @@ export class ProductVariant extends SoftDeletableEntity {
 
   @Column({ name: 'duration_days', type: 'int', nullable: true })
   durationDays?: number | null;
+
+  @Column({ name: 'warranty_duration_days', type: 'int', nullable: true })
+  warrantyDurationDays?: number | null;
 }

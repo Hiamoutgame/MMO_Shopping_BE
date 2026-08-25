@@ -3,8 +3,8 @@ import {
   Column,
   Entity,
   JoinColumn,
-  ManyToOne,
   OneToMany,
+  OneToOne,
   VersionColumn,
 } from 'typeorm';
 import { AuditableEntity } from '../../../common/base/auditable.entity';
@@ -17,7 +17,7 @@ export class Wallet extends AuditableEntity {
   @Column({ name: 'account_id', type: 'uuid', unique: true })
   accountId!: string;
 
-  @ManyToOne(() => Account)
+  @OneToOne(() => Account)
   @JoinColumn({ name: 'account_id' })
   account!: Account;
 

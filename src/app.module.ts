@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
+import jwtConfig from './config/jwt.config';
 import { validate } from './config/env.validation';
 import { AutomationModule } from './modules/automation/automation.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -21,7 +22,7 @@ import { SystemModule } from './modules/system/system.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig],
+      load: [appConfig, databaseConfig, jwtConfig],
       validate,
     }),
     TypeOrmModule.forRootAsync({

@@ -57,6 +57,18 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SWAGGER_VERSION: string = '1.0.0';
+
+  @IsString()
+  @IsOptional()
+  JWT_SECRET!: string;
+
+  @IsString()
+  @IsOptional()
+  JWT_EXPIRES_IN: string = '15m';
+
+  @IsNumber()
+  @IsOptional()
+  REFRESH_TOKEN_EXPIRES_DAYS: number = 7;
 }
 
 export function validate(config: Record<string, unknown>) {

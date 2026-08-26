@@ -31,6 +31,9 @@ export class ProductView extends UuidEntity {
   @Column({ name: 'session_id', type: 'varchar', length: 100, nullable: true })
   sessionId?: string | null;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  source?: string | null;
+
   @CreateDateColumn({ name: 'viewed_at', type: 'timestamptz' })
   viewedAt!: Date;
 }

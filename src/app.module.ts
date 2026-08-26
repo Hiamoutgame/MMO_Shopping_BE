@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -43,6 +44,6 @@ import { SystemModule } from './modules/system/system.module';
     SystemModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ApiExceptionFilter],
 })
 export class AppModule {}

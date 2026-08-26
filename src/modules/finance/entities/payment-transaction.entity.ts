@@ -30,8 +30,21 @@ export class PaymentTransaction extends AuditableEntity {
   @Column({ type: 'enum', enum: PaymentProvider })
   provider!: PaymentProvider;
 
-  @Column({ name: 'provider_transaction_id', type: 'varchar', length: 100 })
-  providerTransactionId!: string;
+  @Column({
+    name: 'provider_transaction_id',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  providerTransactionId?: string | null;
+
+  @Column({
+    name: 'merchant_reference',
+    type: 'varchar',
+    length: 100,
+    unique: true,
+  })
+  merchantReference!: string;
 
   @Column({ type: 'enum', enum: PaymentType })
   type!: PaymentType;

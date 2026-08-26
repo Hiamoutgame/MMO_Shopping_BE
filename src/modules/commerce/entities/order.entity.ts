@@ -79,6 +79,24 @@ export class Order extends AuditableEntity {
   @Column({ name: 'total_amount', type: 'numeric', precision: 19, scale: 4 })
   totalAmount!: string;
 
+  @Column({
+    name: 'refunded_amount',
+    type: 'numeric',
+    precision: 19,
+    scale: 4,
+    default: '0',
+  })
+  refundedAmount!: string;
+
+  @Column({
+    name: 'idempotency_key',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+    unique: true,
+  })
+  idempotencyKey?: string | null;
+
   @Column({ type: 'char', length: 3, default: 'VND' })
   currency!: string;
 

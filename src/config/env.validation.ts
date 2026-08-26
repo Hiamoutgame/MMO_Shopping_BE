@@ -1,9 +1,8 @@
-import { plainToInstance } from 'class-transformer';
+import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
   IsNumber,
-  IsOptional,
   IsString,
   validateSync,
 } from 'class-validator';
@@ -14,20 +13,24 @@ export enum Environment {
   Test = 'test',
 }
 
+function toBoolean(value: unknown): unknown {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+}
+
 export class EnvironmentVariables {
   @IsEnum(Environment)
-  @IsOptional()
-  NODE_ENV: Environment = Environment.Development;
+  NODE_ENV!: Environment;
 
   @IsNumber()
-  @IsOptional()
-  PORT: number = 3000;
+  PORT!: number;
 
   @IsString()
   DB_HOST!: string;
 
   @IsNumber()
-  DB_PORT: number = 5432;
+  DB_PORT!: number;
 
   @IsString()
   DB_USERNAME!: string;
@@ -38,37 +41,36 @@ export class EnvironmentVariables {
   @IsString()
   DB_DATABASE!: string;
 
+  @Transform(({ value }: { value: unknown }) => toBoolean(value))
   @IsBoolean()
-  @IsOptional()
-  SWAGGER_ENABLED: boolean = true;
+  SWAGGER_ENABLED!: boolean;
 
   @IsString()
-  @IsOptional()
-  SWAGGER_PATH: string = 'api/docs';
+  SWAGGER_PATH!: string;
 
   @IsString()
-  @IsOptional()
-  SWAGGER_TITLE: string = 'MMO Shopping API';
+  SWAGGER_TITLE!: string;
 
   @IsString()
-  @IsOptional()
-  SWAGGER_DESCRIPTION: string = 'API documentation for MMO Shopping backend';
+  SWAGGER_DESCRIPTION!: string;
 
   @IsString()
-  @IsOptional()
-  SWAGGER_VERSION: string = '1.0.0';
+  SWAGGER_VERSION!: string;
 
   @IsString()
-  @IsOptional()
   JWT_SECRET!: string;
 
   @IsString()
-  @IsOptional()
-  JWT_EXPIRES_IN: string = '15m';
+  JWT_EXPIRES_IN!: string;
 
   @IsNumber()
-  @IsOptional()
-  REFRESH_TOKEN_EXPIRES_DAYS: number = 7;
+  REFRESH_TOKEN_EXPIRES_DAYS!: number;
+
+  @IsString()
+  INVENTORY_ENCRYPTION_KEY!: string;
+
+  @IsString()
+  PAYMENT_CALLBACK_SECRET!: string;
 }
 
 export function validate(config: Record<string, unknown>) {

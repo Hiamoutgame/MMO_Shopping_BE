@@ -82,6 +82,9 @@ export class WalletTransaction extends UuidEntity {
   })
   idempotencyKey!: string;
 
+  @Column({ type: 'varchar', length: 80, default: 'GENERAL' })
+  purpose!: string;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string | null;
 

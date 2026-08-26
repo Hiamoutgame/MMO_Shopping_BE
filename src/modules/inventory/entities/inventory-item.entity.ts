@@ -26,6 +26,12 @@ export class InventoryItem extends AuditableEntity {
   @Column({ name: 'encrypted_payload', type: 'text' })
   encryptedPayload!: string;
 
+  @Column({ name: 'encryption_key_version', type: 'int', default: 1 })
+  encryptionKeyVersion!: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata?: Record<string, unknown> | null;
+
   @Column({
     type: 'enum',
     enum: InventoryStatus,

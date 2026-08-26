@@ -17,6 +17,10 @@ import { Order } from './order.entity';
 @Check('chk_vouchers_usage_limit', 'usage_limit >= 0')
 @Check('chk_vouchers_per_account_limit', 'per_account_limit >= 0')
 @Check('chk_vouchers_used_count', 'used_count >= 0')
+@Check(
+  'chk_vouchers_percentage_value',
+  "discount_type <> 'PERCENTAGE' OR discount_value <= 100",
+)
 export class Voucher extends SoftDeletableEntity {
   @Column({ type: 'varchar', length: 50, unique: true })
   code!: string;

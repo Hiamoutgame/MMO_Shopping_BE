@@ -2,6 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash } from 'crypto';
 import { EntityManager, Repository } from 'typeorm';
+import { stableStringify } from '../../../common/utils/stable-stringify';
 import { IdempotencyRecord } from '../entities/idempotency-record.entity';
 
 export type IdempotencyState = 'NEW' | 'REPLAY';
@@ -14,9 +15,7 @@ export class IdempotencyService {
   ) {}
 
   hash(value: unknown): string {
-    return createHash('sha256')
-      .update(JSON.stringify(value ?? {}))
-      .digest('hex');
+    return createHash('sha256').update(stableStringify(value)).digest('hex');
   }
 
   async begin(
@@ -57,6 +56,15 @@ export class IdempotencyService {
         success: false,
         data: null,
         message: 'Idempotency key was reused with a different payload.',
+        errorCode: 'IDEMPOTENCY_CONFLICT',
+      });
+    }
+
+    if (record.accountId && accountId && record.accountId !== accountId) {
+      throw new ConflictException({
+        success: false,
+        data: null,
+        message: 'Idempotency key belongs to a different account.',
         errorCode: 'IDEMPOTENCY_CONFLICT',
       });
     }

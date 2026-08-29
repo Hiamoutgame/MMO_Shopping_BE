@@ -292,6 +292,16 @@ export class CatalogService {
           name: c.name,
           slug: c.slug,
         })),
+        variants: productVariants.map((v) => ({
+          id: v.id,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          currency: 'VND',
+          status: v.status,
+          fulfillmentType: v.fulfillmentType,
+          availableQuantity: availableMap.get(v.id) || 0,
+        })),
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
       };

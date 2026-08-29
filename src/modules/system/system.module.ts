@@ -4,6 +4,7 @@ import { SupportCodeRequest } from '../automation/entities/support-code-request.
 import { Order } from '../commerce/entities/order.entity';
 import { InventoryItem } from '../inventory/entities/inventory-item.entity';
 import { Account } from '../identity/entities/account.entity';
+import { IdentityModule } from '../identity/identity.module';
 import { ProductView } from '../shopping/entities/product-view.entity';
 import { AdminSystemController } from './controllers/admin-system.controller';
 import { AdminAuditLog } from './entities/admin-audit-log.entity';
@@ -29,6 +30,9 @@ import { SystemQueryService } from './services/system-query.service';
       ProductView,
       SupportCodeRequest,
     ]),
+    // Cung cấp JwtService (qua JwtModule) và repo AuthSession (qua TypeOrmModule)
+    // cho JwtAuthGuard dùng trong AdminSystemController.
+    IdentityModule,
   ],
   controllers: [AdminSystemController],
   providers: [

@@ -25,6 +25,18 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+### Hoàn Phí 247 façade
+
+Backend cung cấp allowlisted API tại `/api/v1/cashback/*`. Cấu hình local bằng `.env`:
+
+```dotenv
+HOANPHI_API_BASE_URL=https://hoanphi247.vn/api/v1/openapi
+HOANPHI_TIMEOUT_MS=10000
+INTEGRATION_ENCRYPTION_KEY=replace-with-a-strong-random-secret
+```
+
+Credential account test chỉ đặt trong file env bị ignore hoặc secret manager. Không ghi email, mật khẩu hay token thật vào source, docs hoặc `.env.example`.
+
 ## Project setup
 
 ```bash

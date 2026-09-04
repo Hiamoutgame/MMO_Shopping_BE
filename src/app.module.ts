@@ -18,6 +18,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { ShoppingModule } from './modules/shopping/shopping.module';
 import { SupportModule } from './modules/support/support.module';
 import { SystemModule } from './modules/system/system.module';
+import { CashbackModule } from './modules/cashback/cashback.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { SystemModule } from './modules/system/system.module';
     AutomationModule,
     SupportModule,
     SystemModule,
+    CashbackModule,
   ],
   controllers: [AppController],
   providers: [AppService, ApiExceptionFilter],

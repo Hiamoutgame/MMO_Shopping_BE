@@ -71,6 +71,15 @@ export class EnvironmentVariables {
 
   @IsString()
   PAYMENT_CALLBACK_SECRET!: string;
+
+  @IsString()
+  HOANPHI_API_BASE_URL!: string;
+
+  @IsNumber()
+  HOANPHI_TIMEOUT_MS!: number;
+
+  @IsString()
+  INTEGRATION_ENCRYPTION_KEY!: string;
 }
 
 export function validate(config: Record<string, unknown>) {

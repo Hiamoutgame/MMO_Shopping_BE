@@ -40,6 +40,7 @@ async function bootstrap() {
       .addTag('finance')
       .addTag('automation')
       .addTag('support')
+      .addTag('cashback')
       .addTag('admin')
       .build();
 

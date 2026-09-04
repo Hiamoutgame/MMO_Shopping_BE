@@ -1,0 +1,5 @@
+export enum CashbackConnectionStatus {
+  CONNECTED = 'CONNECTED',
+  REAUTH_REQUIRED = 'REAUTH_REQUIRED',
+  DISCONNECTED = 'DISCONNECTED',
+}

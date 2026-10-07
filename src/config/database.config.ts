@@ -9,4 +9,5 @@ export default registerAs('database', () => ({
   database: process.env.DB_DATABASE,
   synchronize: false,
   autoLoadEntities: true,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 }));

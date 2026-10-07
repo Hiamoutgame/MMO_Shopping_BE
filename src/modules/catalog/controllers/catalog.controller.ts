@@ -6,7 +6,7 @@ import { QueryProductDto } from '../dto/query-product.dto';
 import { CatalogService } from '../services/catalog.service';
 
 @ApiTags('catalog')
-@Controller('api/v1')
+@Controller('v1')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 

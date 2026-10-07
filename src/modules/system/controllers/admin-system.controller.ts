@@ -9,7 +9,7 @@ import { ReportQueryDto } from '../dto/report-query.dto';
 import { SystemQueryService } from '../services/system-query.service';
 
 @ApiTags('admin')
-@Controller('api/v1/admin')
+@Controller('v1/admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()

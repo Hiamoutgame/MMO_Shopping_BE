@@ -23,7 +23,7 @@ import { UpdateInventoryItemDto } from '../dto/update-inventory-item.dto';
 import { InventoryService } from '../services/inventory.service';
 
 @ApiTags('admin')
-@Controller('api/v1/admin/inventory-items')
+@Controller('v1/admin/inventory-items')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()

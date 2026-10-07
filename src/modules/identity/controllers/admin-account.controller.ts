@@ -22,7 +22,7 @@ import { UpdateAccountDto } from '../dto/update-account.dto';
 import { AccountService } from '../services/account.service';
 
 @ApiTags('admin')
-@Controller('api/v1/admin/accounts')
+@Controller('v1/admin/accounts')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()

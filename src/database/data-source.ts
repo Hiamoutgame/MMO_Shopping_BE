@@ -13,6 +13,9 @@ export const dataSourceOptions: DataSourceOptions = {
   entities: [__dirname + '/../modules/**/entities/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: false,
+  ssl: process.env.DB_SSL === 'true' ? {
+    rejectUnauthorized: false,
+  } : false,
 };
 
 const AppDataSource = new DataSource(dataSourceOptions);

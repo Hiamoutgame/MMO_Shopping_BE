@@ -1,0 +1,8 @@
+export enum PriceRuleType {
+  BASE = 'BASE',
+  ROLE_BASED = 'ROLE_BASED',
+  SEASONAL = 'SEASONAL',
+  QUANTITY = 'QUANTITY',
+  PACKAGE = 'PACKAGE',
+  PROMOTION = 'PROMOTION',
+}

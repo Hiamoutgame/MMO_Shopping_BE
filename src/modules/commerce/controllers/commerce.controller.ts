@@ -27,7 +27,7 @@ import { CreateVoucherDto, UpdateVoucherDto } from '../dto/voucher.dto';
 import { CommerceService } from '../services/commerce.service';
 
 @ApiTags('commerce')
-@Controller('api/v1')
+@Controller('v1')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class CommerceController {
@@ -80,7 +80,7 @@ export class CommerceController {
 }
 
 @ApiTags('admin')
-@Controller('api/v1/admin')
+@Controller('v1/admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()

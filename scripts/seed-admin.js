@@ -22,6 +22,9 @@ async function main() {
     user: requireEnv('DB_USERNAME'),
     password: requireEnv('DB_PASSWORD'),
     database: requireEnv('DB_DATABASE'),
+    ssl: process.env.DB_SSL === 'true'
+      ? { rejectUnauthorized: false }
+      : false,
   });
 
   await client.connect();

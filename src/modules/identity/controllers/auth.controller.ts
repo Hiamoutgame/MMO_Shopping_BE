@@ -22,7 +22,7 @@ import { RegisterDto } from '../dto/register.dto';
 import { AuthService } from '../services/auth.service';
 
 @ApiTags('auth')
-@Controller('api/v1/auth')
+@Controller('v1/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

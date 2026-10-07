@@ -26,7 +26,7 @@ import { PaymentProvider } from '../enums/payment-provider.enum';
 import { FinanceService } from '../services/finance.service';
 
 @ApiTags('finance')
-@Controller('api/v1')
+@Controller('v1')
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
@@ -88,7 +88,7 @@ export class FinanceController {
 }
 
 @ApiTags('admin')
-@Controller('api/v1/admin')
+@Controller('v1/admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()

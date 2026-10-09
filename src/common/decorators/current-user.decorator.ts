@@ -1,4 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import type { Request } from 'express';
 
 export interface ActiveUserData {
   id: string;
@@ -6,11 +7,20 @@ export interface ActiveUserData {
   roleCode: string;
   subject: string;
   sessionId: string;
+  role?: {
+    code: string;
+  };
+}
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: ActiveUserData;
+  }
 }
 
 export const CurrentUser = createParamDecorator(
-  (data: string | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
+  (data: keyof ActiveUserData | undefined, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest<Request>();
     const user = request.user;
 
     return data ? user?.[data] : user;

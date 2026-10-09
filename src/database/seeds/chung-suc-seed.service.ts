@@ -286,19 +286,15 @@ export class ChungSucSeedService {
         campaign = manager.create(ChungSucCampaign, {
           seasonId: season.id,
           productId: products[0].id,
-          name: 'Chung Sức Mua Facebook Account',
+          name: 'Chung Sức Mã Mời',
           slug: 'facebook-acc-chung-suc',
-          description: 'Mua chung 100 account Facebook giá cực tốt!',
+          description:
+            'Gửi mã mời của bạn, tài khoản của Shop sẽ nhập mã để bạn đủ lượt mời.',
           imageUrl: 'https://example.com/facebook-campaign.jpg',
-          targetQuantity: 100,
-          currentQuantity: 0,
+          targetQuantity: 8,
           startTime: campaignStart,
           endTime: campaignEnd,
           status: CampaignStatus.ACTIVE,
-          rewards: {
-            milestone50: 'Tặng thêm 5 account miễn phí',
-            milestone100: 'Giảm thêm 5% cho đơn hàng tiếp theo',
-          },
         });
         await manager.save(ChungSucCampaign, campaign);
       }

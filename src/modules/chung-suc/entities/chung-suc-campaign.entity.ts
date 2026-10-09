@@ -24,11 +24,9 @@ export class ChungSucCampaign extends SoftDeletableEntity {
   @Column({ name: 'image_url', type: 'varchar', length: 500, nullable: true })
   imageUrl?: string | null;
 
+  // Số tài khoản hỗ trợ tối đa cho MỖI mã mời, không phải tổng của campaign.
   @Column({ name: 'target_quantity', type: 'int' })
   targetQuantity!: number;
-
-  @Column({ name: 'current_quantity', type: 'int', default: 0 })
-  currentQuantity!: number;
 
   @Column({ name: 'start_time', type: 'timestamptz' })
   startTime!: Date;

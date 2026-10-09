@@ -33,6 +33,11 @@ import { SeedModule } from './database/seeds/seed.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [
+        `.env.${process.env.NODE_ENV ?? 'development'}.local`,
+        `.env.${process.env.NODE_ENV ?? 'development'}`,
+        '.env',
+      ],
       load: [appConfig, databaseConfig, jwtConfig],
       validate,
     }),

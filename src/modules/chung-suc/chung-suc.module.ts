@@ -5,20 +5,17 @@ import { ChungSucParticipant } from './entities/chung-suc-participant.entity';
 import { ChungSucService } from './services/chung-suc.service';
 import { ChungSucController } from './controllers/chung-suc.controller';
 import { Product } from '../catalog/entities/product.entity';
-import { Account } from '../identity/entities/account.entity';
-import { Order } from '../commerce/entities/order.entity';
+import { IdentityModule } from '../identity/identity.module';
+import { PricingModule } from '../pricing/pricing.module';
+import { CryptoService } from '../../common/crypto/crypto.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      ChungSucCampaign,
-      ChungSucParticipant,
-      Product,
-      Account,
-      Order,
-    ]),
+    TypeOrmModule.forFeature([ChungSucCampaign, ChungSucParticipant, Product]),
+    IdentityModule,
+    PricingModule,
   ],
-  providers: [ChungSucService],
+  providers: [ChungSucService, CryptoService],
   controllers: [ChungSucController],
   exports: [ChungSucService],
 })

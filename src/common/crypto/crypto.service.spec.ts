@@ -26,6 +26,14 @@ describe('CryptoService', () => {
     });
   });
 
+  it('hashes lookup values deterministically without exposing plaintext', () => {
+    const hash = service.hashLookup('INVITE-ABC123');
+    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(hash).not.toContain('INVITE-ABC123');
+    expect(service.hashLookup('INVITE-ABC123')).toBe(hash);
+    expect(service.hashLookup('INVITE-ABC124')).not.toBe(hash);
+  });
+
   it('verifies HMAC signatures with timestamp tolerance', () => {
     const body = Buffer.from(JSON.stringify({ ok: true }));
     const timestamp = Date.now().toString();

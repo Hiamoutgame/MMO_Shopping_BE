@@ -5,6 +5,7 @@ import type { CreateSeasonDto, UpdateSeasonDto } from '../services/seasons.servi
 import { Season } from '../entities/season.entity';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { AdminOnly, AllRoles } from '../../../common/decorators/roles.decorator';
+import { createApiResponse } from '../../../common/utils/api-response';
 
 @ApiTags('Seasons')
 @Controller('v1/seasons')
@@ -24,15 +25,15 @@ export class SeasonsController {
   @Get()
   @ApiOperation({ summary: 'Get all seasons' })
   @ApiResponse({ status: 200, description: 'List of all seasons' })
-  async findAll(): Promise<Season[]> {
-    return this.seasonsService.findAll();
+  async findAll() {
+    return createApiResponse(await this.seasonsService.findAll());
   }
 
   @Get('active')
   @ApiOperation({ summary: 'Get active seasons' })
   @ApiResponse({ status: 200, description: 'List of active seasons' })
-  async findActive(): Promise<Season[]> {
-    return this.seasonsService.findActive();
+  async findActive() {
+    return createApiResponse(await this.seasonsService.findActive());
   }
 
   @Get(':id')

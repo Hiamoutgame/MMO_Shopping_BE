@@ -1,14 +1,14 @@
 # MMO Shopping - CHUNG SỨC System
 
-Complete e-commerce platform với hệ thống **CHUNG SỨC** (Group Buying/Crowdfunding) - mua chung số lượng lớn để được giá tốt hơn.
+Complete e-commerce platform với hệ thống **CHUNG SỨC** (tiếp sức mã mời) - khách gửi mã mời trong game, tài khoản của Shop nhập mã đó để khách đủ lượt mời.
 
 ## 🎯 Tính Năng Chính
 
-### 1. **CHUNG SỨC Campaign** (Group Buying)
-- Tạo chiến dịch mua chung với target quantity
-- Real-time tracking tiến độ
-- Milestone rewards khi đạt mốc
-- Atomic quantity updates (thread-safe)
+### 1. **CHUNG SỨC Campaign** (Tiếp sức mã mời)
+- Mỗi campaign là một sự kiện game; target quantity là số tài khoản hỗ trợ tối đa cho mỗi mã mời
+- Khách gửi mã mời + số tài khoản hỗ trợ, yêu cầu chờ ở trạng thái `PENDING`
+- Mã mời lưu dạng hash + mã hóa; một mã chỉ có một yêu cầu đang mở trong mỗi campaign
+- Đơn giá chụp từ Price Engine lúc gửi; chưa gọi tool và chưa trừ ví (đợt sau)
 
 ### 2. **Price Engine** (Core Business Logic)
 Sequential discount pipeline:
@@ -142,9 +142,13 @@ Body: {
 
 #### CHUNG SỨC Campaigns
 ```
-GET  /api/chung-suc/campaigns
-POST /api/chung-suc/campaigns        (Admin only)
-POST /api/chung-suc/campaigns/:id/join
+GET   /api/v1/campaigns
+GET   /api/v1/campaigns/active
+GET   /api/v1/campaigns/:id
+POST  /api/v1/campaigns               (Admin only)
+PATCH /api/v1/campaigns/:id           (Admin only)
+POST  /api/v1/campaigns/:id/activate  (Admin only; also pause, end, close)
+POST  /api/v1/campaigns/:id/join      (logged-in user)
 ```
 
 #### Seasons

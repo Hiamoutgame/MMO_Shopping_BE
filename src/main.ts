@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -6,7 +7,15 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Sau Nginx: tin X-Forwarded-For để audit log ghi IP thật của client.
+  if (process.env.TRUST_PROXY) {
+    app.set(
+      'trust proxy',
+      process.env.TRUST_PROXY === 'true' ? true : process.env.TRUST_PROXY,
+    );
+  }
 
   // Global prefix
   app.setGlobalPrefix('api');

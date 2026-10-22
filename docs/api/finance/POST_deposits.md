@@ -10,6 +10,8 @@
 
 ## Mô tả
 
+> **Cập nhật 23/10/2026:** nạp qua SePay (chuyển khoản + QR). Body chỉ còn `amount` (số nguyên VND, tối thiểu 10.000), response là `{ deposit }`. Hợp đồng đầy đủ: [sepay-deposit-api.md](sepay-deposit-api.md). Phần bên dưới là mẫu cũ, giữ để tham chiếu.
+
 Tạo payment transaction pending và trả thông tin redirect/instruction.
 
 ## Request

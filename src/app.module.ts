@@ -7,6 +7,7 @@ import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
+import sepayConfig from './config/sepay.config';
 import { validate } from './config/env.validation';
 import { AutomationModule } from './modules/automation/automation.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -38,7 +39,7 @@ import { SeedModule } from './database/seeds/seed.module';
         `.env.${process.env.NODE_ENV ?? 'development'}`,
         '.env',
       ],
-      load: [appConfig, databaseConfig, jwtConfig],
+      load: [appConfig, databaseConfig, jwtConfig, sepayConfig],
       validate,
     }),
     TypeOrmModule.forRootAsync({

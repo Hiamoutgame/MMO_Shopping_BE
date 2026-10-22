@@ -1,4 +1,12 @@
-import { Check, Column, Entity, JoinColumn, ManyToOne, Unique } from 'typeorm';
+import {
+  Check,
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  Unique,
+} from 'typeorm';
 import { AuditableEntity } from '../../../common/base/auditable.entity';
 import { Account } from '../../identity/entities/account.entity';
 import { PaymentProvider } from '../enums/payment-provider.enum';
@@ -8,6 +16,7 @@ import { Wallet } from './wallet.entity';
 
 @Entity('payment_transactions')
 @Check('chk_payment_transactions_amount', 'amount > 0')
+@Index('idx_payment_transactions_account_status', ['accountId', 'status'])
 @Unique('uq_payment_transactions_provider_tx', [
   'provider',
   'providerTransactionId',
@@ -72,6 +81,9 @@ export class PaymentTransaction extends AuditableEntity {
 
   @Column({ type: 'jsonb', nullable: true })
   metadata?: Record<string, any> | null;
+
+  @Column({ name: 'expires_at', type: 'timestamptz', nullable: true })
+  expiresAt?: Date | null;
 
   @Column({ name: 'completed_at', type: 'timestamptz', nullable: true })
   completedAt?: Date | null;

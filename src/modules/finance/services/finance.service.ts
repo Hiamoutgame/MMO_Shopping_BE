@@ -6,12 +6,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomUUID } from 'crypto';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CryptoService } from '../../../common/crypto/crypto.service';
 import { formatMoney, money } from '../../../common/utils/money';
 import { IdempotencyService } from '../../system/services/idempotency.service';
-import { CreateDepositDto } from '../dto/create-deposit.dto';
 import {
   PaymentCallbackDto,
   PaymentCallbackStatus,
@@ -25,7 +23,6 @@ import { WalletTransaction } from '../entities/wallet-transaction.entity';
 import { Wallet } from '../entities/wallet.entity';
 import { PaymentProvider } from '../enums/payment-provider.enum';
 import { PaymentTransactionStatus } from '../enums/payment-transaction-status.enum';
-import { PaymentType } from '../enums/payment-type.enum';
 import { WalletTransactionStatus } from '../enums/wallet-transaction-status.enum';
 import { WalletTransactionType } from '../enums/wallet-transaction-type.enum';
 
@@ -48,66 +45,8 @@ export class FinanceService {
     return { wallet: this.serializeWallet(wallet) };
   }
 
-  async createDeposit(
-    accountId: string,
-    dto: CreateDepositDto,
-    idempotencyKey?: string,
-  ) {
-    if (!idempotencyKey) {
-      throw new BadRequestException({
-        success: false,
-        data: null,
-        message: 'Idempotency-Key header is required.',
-        errorCode: 'IDEMPOTENCY_KEY_REQUIRED',
-      });
-    }
-    if (money(dto.amount).lte(0)) {
-      throw new BadRequestException(
-        'Deposit amount must be greater than zero.',
-      );
-    }
-
-    return this.dataSource.transaction(async (manager) => {
-      const requestHash = this.idempotencyService.hash(dto);
-      const idempotency = await this.idempotencyService.begin(
-        manager,
-        'deposit',
-        idempotencyKey,
-        requestHash,
-        accountId,
-      );
-      if (idempotency.state === 'REPLAY') {
-        return idempotency.record.responseBody;
-      }
-
-      const wallet = await this.ensureWallet(accountId, manager);
-      const payment = await manager.save(
-        PaymentTransaction,
-        manager.create(PaymentTransaction, {
-          accountId,
-          walletId: wallet.id,
-          provider: dto.provider || PaymentProvider.BANK_TRANSFER,
-          providerTransactionId: null,
-          merchantReference: `DEP-${randomUUID()}`,
-          type: PaymentType.DEPOSIT,
-          amount: formatMoney(dto.amount),
-          currency: (dto.currency || 'VND').toUpperCase(),
-          status: PaymentTransactionStatus.PENDING,
-          idempotencyKey,
-          metadata: {
-            adapter: 'BANK_TRANSFER_MOCK',
-            instruction: 'Use callback endpoint to complete this deposit.',
-          },
-        }),
-      );
-      const response = { paymentTransaction: this.serializePayment(payment) };
-      await this.idempotencyService.complete(
-        manager,
-        idempotency.record,
-        response,
-      );
-      return response;
-    });
+  getOrCreateWallet(accountId: string, manager: EntityManager) {
+    return this.ensureWallet(accountId, manager);
   }
 
   async handlePaymentCallback(
@@ -117,6 +56,15 @@ export class FinanceService {
     timestamp?: string,
     signature?: string,
   ) {
+    if (provider === PaymentProvider.SEPAY) {
+      // SePay có webhook riêng (Apikey + nhật ký sự kiện); không nhận qua HMAC chung.
+      throw new BadRequestException({
+        success: false,
+        data: null,
+        message: 'Use /v1/payments/sepay/webhook for SePay.',
+        errorCode: 'UNSUPPORTED_PROVIDER',
+      });
+    }
     if (!this.cryptoService.verifyHmac(rawBody, timestamp, signature)) {
       throw new UnauthorizedException({
         success: false,
@@ -321,6 +269,97 @@ export class FinanceService {
     return this.credit(manager, { ...input, purpose: 'REFUND' });
   }
 
+  /**
+   * Đối soát toàn bộ ví: số dư phải bằng tổng ledger, chuỗi balance_before
+   * phải nối đúng balance_after dòng trước, mỗi nạp tiền thành công phải có
+   * đúng một dòng ledger cùng số tiền. Chỉ đọc, không tự sửa dữ liệu.
+   */
+  async reconcile() {
+    const walletMismatches = await this.dataSource.query<
+      Record<string, unknown>[]
+    >(`
+      WITH ordered AS (
+        SELECT wallet_id, type, amount, balance_before, balance_after,
+          LAG(balance_after) OVER (PARTITION BY wallet_id ORDER BY ledger_seq) AS prev_after
+        FROM wallet_transactions
+      ), ledger AS (
+        SELECT wallet_id,
+          SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE -amount END) AS net,
+          COUNT(*) AS entries,
+          COUNT(*) FILTER (WHERE prev_after IS NOT NULL AND prev_after <> balance_before) AS broken_links
+        FROM ordered GROUP BY wallet_id
+      )
+      SELECT w.id AS "walletId", w.account_id AS "accountId", a.email,
+        w.balance::text AS balance,
+        COALESCE(l.net, 0)::text AS "ledgerNet",
+        COALESCE(l.entries, 0)::int AS entries,
+        COALESCE(l.broken_links, 0)::int AS "brokenLinks"
+      FROM wallets w
+      LEFT JOIN ledger l ON l.wallet_id = w.id
+      LEFT JOIN accounts a ON a.id = w.account_id
+      WHERE w.balance <> COALESCE(l.net, 0) OR COALESCE(l.broken_links, 0) > 0
+      ORDER BY w.updated_at DESC
+      LIMIT 200
+    `);
+
+    const paymentIssues = await this.dataSource.query<
+      Record<string, unknown>[]
+    >(`
+      SELECT p.id AS "paymentTransactionId", p.account_id AS "accountId",
+        p.merchant_reference AS "merchantReference", p.amount::text AS amount,
+        COUNT(wt.id)::int AS "ledgerEntries",
+        COALESCE(SUM(wt.amount), 0)::text AS "ledgerAmount"
+      FROM payment_transactions p
+      LEFT JOIN wallet_transactions wt ON wt.payment_transaction_id = p.id
+      WHERE p.type = 'DEPOSIT' AND p.status = 'SUCCEEDED'
+      GROUP BY p.id
+      HAVING COUNT(wt.id) <> 1 OR COALESCE(SUM(wt.amount), 0) <> p.amount
+      LIMIT 200
+    `);
+
+    const orphanLedgers = await this.dataSource.query<
+      Record<string, unknown>[]
+    >(`
+      SELECT wt.id AS "walletTransactionId", wt.payment_transaction_id AS "paymentTransactionId",
+        p.status AS "paymentStatus", wt.amount::text AS amount
+      FROM wallet_transactions wt
+      JOIN payment_transactions p ON p.id = wt.payment_transaction_id
+      WHERE p.status <> 'SUCCEEDED'
+      LIMIT 200
+    `);
+
+    const eventsWithoutLedger = await this.dataSource.query<
+      Record<string, unknown>[]
+    >(`
+      SELECT e.id AS "eventId", e.provider_event_id AS "providerEventId",
+        e.status, e.amount::text AS amount
+      FROM payment_webhook_events e
+      WHERE e.status IN ('PROCESSED', 'RESOLVED') AND e.wallet_transaction_id IS NULL
+      LIMIT 200
+    `);
+
+    const [totals] = await this.dataSource.query<Record<string, unknown>[]>(`
+      SELECT
+        (SELECT COUNT(*) FROM wallets)::int AS "walletsChecked",
+        (SELECT COALESCE(SUM(balance), 0) FROM wallets)::text AS "totalBalance",
+        (SELECT COUNT(*) FROM payment_webhook_events WHERE status = 'NEEDS_REVIEW')::int AS "eventsNeedingReview"
+    `);
+
+    return {
+      checkedAt: new Date(),
+      ok:
+        walletMismatches.length === 0 &&
+        paymentIssues.length === 0 &&
+        orphanLedgers.length === 0 &&
+        eventsWithoutLedger.length === 0,
+      ...totals,
+      walletMismatches,
+      paymentIssues,
+      orphanLedgers,
+      eventsWithoutLedger,
+    };
+  }
+
   private async moveBalance(
     manager: EntityManager,
     type: WalletTransactionType,
@@ -343,6 +382,14 @@ export class FinanceService {
     }
 
     const wallet = await this.ensureWallet(input.accountId, manager, true);
+    // Kiểm tra lại sau khi giữ khóa ví: request song song cùng key đã chờ khóa
+    // sẽ thấy dòng ledger vừa ghi và trả lại nó thay vì ghi lần hai.
+    const committed = await manager.findOne(WalletTransaction, {
+      where: { idempotencyKey: input.idempotencyKey },
+    });
+    if (committed) {
+      return committed;
+    }
     if (wallet.currency !== input.currency.toUpperCase()) {
       throw new BadRequestException('Wallet currency mismatch.');
     }
@@ -441,6 +488,7 @@ export class FinanceService {
       status: tx.status,
       purpose: tx.purpose,
       description: tx.description,
+      ledgerSeq: tx.ledgerSeq,
       createdAt: tx.createdAt,
     };
   }

@@ -37,7 +37,11 @@ export class ProfitRecord extends UuidEntity {
   @Column({ name: 'profit_margin', type: 'numeric', precision: 5, scale: 2 })
   profitMargin!: string;
 
-  @Column({ name: 'recorded_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'recorded_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   recordedAt!: Date;
 
   @ManyToOne(() => Order)

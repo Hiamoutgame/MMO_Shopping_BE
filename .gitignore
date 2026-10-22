@@ -2,6 +2,7 @@
 /dist
 /node_modules
 /build
+*.tsbuildinfo
 
 # Logs
 logs
@@ -63,3 +64,8 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Additional deployment secrets
+.env.*
+!.env.example
+!.env.production.example

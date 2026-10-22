@@ -1,6 +1,17 @@
-import { Controller, Get, Post, Put, Body, Param, Query, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Patch,
+} from '@nestjs/common';
 import { CouponsService } from '../services/coupons.service';
-import type { ValidateCouponDto, RecordCouponUsageDto } from '../services/coupons.service';
+import type {
+  ValidateCouponDto,
+  RecordCouponUsageDto,
+} from '../services/coupons.service';
 import { CouponUsage } from '../entities/coupon-usage.entity';
 
 @Controller('v1/coupons')

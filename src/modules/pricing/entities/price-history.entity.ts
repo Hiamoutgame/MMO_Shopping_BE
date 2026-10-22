@@ -25,7 +25,11 @@ export class PriceHistory extends SoftDeletableEntity {
   @Column({ type: 'text', nullable: true })
   reason?: string | null;
 
-  @Column({ name: 'changed_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'changed_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   changedAt!: Date;
 
   @ManyToOne(() => Product)

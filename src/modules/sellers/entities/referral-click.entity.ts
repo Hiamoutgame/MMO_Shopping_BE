@@ -21,7 +21,11 @@ export class ReferralClick extends UuidEntity {
   @Column({ type: 'varchar', length: 500, nullable: true })
   referrer?: string | null;
 
-  @Column({ name: 'clicked_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'clicked_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   clickedAt!: Date;
 
   @ManyToOne(() => SellerReferralCode)

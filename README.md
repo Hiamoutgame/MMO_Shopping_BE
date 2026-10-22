@@ -1,3 +1,7 @@
+# MMO Shopping Backend
+
+> **Nghiệp vụ từ 23/10/2026:** Backend phục vụ shop một chủ; bạn dùng `ADMIN` để bán hàng, nhập/quản lý kho và xử lý đơn, khách dùng `USER` để mua từ shop. Đọc [bộ docs hiện hành](../docs/README.md), [nghiệp vụ](../docs/business/single-owner-shop.md), [API](../docs/api/single-owner-shop.md), [plan](../docs/plan/single-owner-shop.md), [rule](../docs/rule/business.md). Role seller đã tạm ngừng trong code: chỉ gán USER/ADMIN, API seller trả 410; tài khoản cũ dùng quyền USER, giữ dữ liệu lịch sử. Xem [bản thay đổi](../docs/changes/seller-role-disabled-2026-10-23.md). Chưa chạy chuyển dữ liệu thật. Nội dung NestJS starter bên dưới chỉ là hướng dẫn kỹ thuật chung.
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
@@ -108,3 +112,9 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Docker và CI/CD
+
+Hướng dẫn chạy Docker, cấu hình GitHub Actions, GHCR, VPS và Render: [DOCKER.md](DOCKER.md).
+
+Gắn tên miền vào VPS (DNS, Nginx, HTTPS/Let's Encrypt, build frontend): [VPS_DOMAIN.md](VPS_DOMAIN.md).

@@ -8,7 +8,6 @@ import { Product } from '../../catalog/entities/product.entity';
 import { Account } from '../../identity/entities/account.entity';
 import { Voucher } from '../../commerce/entities/voucher.entity';
 import { Package } from '../../packages/entities/package.entity';
-import { SellerReferralCode } from '../../sellers/entities/seller-referral-code.entity';
 import { PriceRuleType } from '../enums/price-rule-type.enum';
 import { DiscountType } from '../../commerce/enums/discount-type.enum';
 
@@ -18,7 +17,6 @@ export interface CalculatePriceParams {
   quantity: number;
   seasonId?: string;
   packageId?: string;
-  sellerCode?: string;
   couponCode?: string;
 }
 
@@ -58,8 +56,6 @@ export class PriceEngineService {
     private packageRepo: Repository<Package>,
     @InjectRepository(Voucher)
     private voucherRepo: Repository<Voucher>,
-    @InjectRepository(SellerReferralCode)
-    private sellerCodeRepo: Repository<SellerReferralCode>,
   ) {}
 
   /**
@@ -67,17 +63,18 @@ export class PriceEngineService {
    *
    * Pipeline:
    * 1. Base Price (from Product or Package)
-   * 2. Role-Based Pricing (USER vs SELLER)
+   * 2. Customer Pricing (USER policy for all purchasing accounts)
    * 3. Quantity Tier Discount
    * 4. Seasonal Pricing
    * 5. Package Discount
-   * 6. Seller Referral Discount
    * 7. Coupon Discount
    * 8. Price Floor Enforcement
    *
    * CRITICAL: Discounts are applied SEQUENTIALLY, not additively
    */
-  async calculatePrice(params: CalculatePriceParams): Promise<PriceCalculationResult> {
+  async calculatePrice(
+    params: CalculatePriceParams,
+  ): Promise<PriceCalculationResult> {
     this.logger.log(`Calculating price for params: ${JSON.stringify(params)}`);
 
     const breakdown: PriceBreakdownItem[] = [];
@@ -101,7 +98,8 @@ export class PriceEngineService {
       throw new Error('Account or role not found');
     }
 
-    const roleCode = account.role.code;
+    // Administrative permission does not grant a separate customer price.
+    const roleCode = 'USER';
 
     // Step 3: Determine Base Price
     let currentPrice = new Decimal(product.basePrice || 0);
@@ -175,7 +173,12 @@ export class PriceEngineService {
       );
 
       for (const rule of seasonalRules) {
-        currentPrice = this.applyRule(rule, currentPrice, breakdown, '4. Seasonal Discount');
+        currentPrice = this.applyRule(
+          rule,
+          currentPrice,
+          breakdown,
+          '4. Seasonal Discount',
+        );
       }
     }
 
@@ -201,28 +204,6 @@ export class PriceEngineService {
           });
 
           currentPrice = packageUnitPrice;
-        }
-      }
-    }
-
-    // Step 8: Apply Seller Referral Discount
-    if (params.sellerCode) {
-      const sellerCode = await this.sellerCodeRepo.findOne({
-        where: { code: params.sellerCode, isActive: true },
-      });
-
-      if (sellerCode) {
-        const sellerRules = await this.priceRuleRepo.find({
-          where: {
-            ruleType: PriceRuleType.ROLE_BASED,
-            isActive: true,
-          },
-        });
-
-        for (const rule of sellerRules) {
-          if (rule.applicableRoles?.includes('SELLER')) {
-            currentPrice = this.applyRule(rule, currentPrice, breakdown, '6. Seller Referral Discount');
-          }
         }
       }
     }
@@ -286,13 +267,17 @@ export class PriceEngineService {
       .andWhere('tier.quantityFrom <= :quantity', { quantity });
 
     if (seasonId) {
-      query.andWhere('(tier.seasonId = :seasonId OR tier.seasonId IS NULL)', { seasonId });
+      query.andWhere('(tier.seasonId = :seasonId OR tier.seasonId IS NULL)', {
+        seasonId,
+      });
     } else {
       query.andWhere('tier.seasonId IS NULL');
     }
 
     query
-      .andWhere('(tier.quantityTo IS NULL OR tier.quantityTo >= :quantity)', { quantity })
+      .andWhere('(tier.quantityTo IS NULL OR tier.quantityTo >= :quantity)', {
+        quantity,
+      })
       .orderBy('tier.quantityFrom', 'DESC')
       .addOrderBy('tier.createdAt', 'DESC');
 
@@ -306,7 +291,12 @@ export class PriceEngineService {
     seasonId?: string,
   ): Promise<PriceTier | null> {
     // Same as findApplicablePriceTier for now
-    return this.findApplicablePriceTier(productId, roleCode, quantity, seasonId);
+    return this.findApplicablePriceTier(
+      productId,
+      roleCode,
+      quantity,
+      seasonId,
+    );
   }
 
   private async findApplicableRules(
@@ -322,14 +312,10 @@ export class PriceEngineService {
 
     // Check date validity
     const now = new Date();
-    query.andWhere(
-      '(rule.start_date IS NULL OR rule.start_date <= :now)',
-      { now },
-    );
-    query.andWhere(
-      '(rule.end_date IS NULL OR rule.end_date >= :now)',
-      { now },
-    );
+    query.andWhere('(rule.start_date IS NULL OR rule.start_date <= :now)', {
+      now,
+    });
+    query.andWhere('(rule.end_date IS NULL OR rule.end_date >= :now)', { now });
 
     // Check product applicability
     query.andWhere(
@@ -396,7 +382,9 @@ export class PriceEngineService {
     let discount = new Decimal(0);
 
     if (coupon.discountType === DiscountType.PERCENTAGE) {
-      discount = currentPrice.times(new Decimal(coupon.discountValue || 0)).div(100);
+      discount = currentPrice
+        .times(new Decimal(coupon.discountValue || 0))
+        .div(100);
 
       // Apply maximum discount cap if exists
       if (coupon.maximumDiscountAmount) {
@@ -429,6 +417,14 @@ export class PriceEngineService {
 
     // Check if coupon is active
     if (!coupon.isActive) {
+      return false;
+    }
+
+    // Legacy seller-only coupons stay inactive without changing stored data.
+    if (
+      coupon.applicableRoles?.length &&
+      !coupon.applicableRoles.includes('USER')
+    ) {
       return false;
     }
 

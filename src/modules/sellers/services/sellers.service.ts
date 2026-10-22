@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { SellerProfile } from '../entities/seller-profile.entity';
@@ -62,7 +67,9 @@ export class SellersService {
     });
 
     if (!account) {
-      throw new NotFoundException(`Account with ID "${dto.accountId}" not found`);
+      throw new NotFoundException(
+        `Account with ID "${dto.accountId}" not found`,
+      );
     }
 
     const existing = await this.sellerRepo.findOne({
@@ -70,12 +77,16 @@ export class SellersService {
     });
 
     if (existing) {
-      throw new BadRequestException('Seller profile already exists for this account');
+      throw new BadRequestException(
+        'Seller profile already exists for this account',
+      );
     }
 
     if (dto.commissionRate !== undefined) {
       if (dto.commissionRate < 0 || dto.commissionRate > 100) {
-        throw new BadRequestException('Commission rate must be between 0 and 100');
+        throw new BadRequestException(
+          'Commission rate must be between 0 and 100',
+        );
       }
     }
 
@@ -123,18 +134,25 @@ export class SellersService {
     });
 
     if (!profile) {
-      throw new NotFoundException(`Seller profile not found for account "${accountId}"`);
+      throw new NotFoundException(
+        `Seller profile not found for account "${accountId}"`,
+      );
     }
 
     return profile;
   }
 
-  async update(id: string, dto: UpdateSellerProfileDto): Promise<SellerProfile> {
+  async update(
+    id: string,
+    dto: UpdateSellerProfileDto,
+  ): Promise<SellerProfile> {
     const profile = await this.findById(id);
 
     if (dto.commissionRate !== undefined) {
       if (dto.commissionRate < 0 || dto.commissionRate > 100) {
-        throw new BadRequestException('Commission rate must be between 0 and 100');
+        throw new BadRequestException(
+          'Commission rate must be between 0 and 100',
+        );
       }
     }
 
@@ -154,7 +172,9 @@ export class SellersService {
     });
 
     if (!approver) {
-      throw new NotFoundException(`Approver account with ID "${dto.approvedBy}" not found`);
+      throw new NotFoundException(
+        `Approver account with ID "${dto.approvedBy}" not found`,
+      );
     }
 
     profile.approvalStatus = SellerApprovalStatus.APPROVED;
@@ -163,7 +183,9 @@ export class SellersService {
 
     if (dto.commissionRate !== undefined) {
       if (dto.commissionRate < 0 || dto.commissionRate > 100) {
-        throw new BadRequestException('Commission rate must be between 0 and 100');
+        throw new BadRequestException(
+          'Commission rate must be between 0 and 100',
+        );
       }
       profile.commissionRate = dto.commissionRate.toString();
     }
@@ -192,7 +214,9 @@ export class SellersService {
     const profile = await this.findById(sellerId);
 
     if (profile.approvalStatus !== SellerApprovalStatus.APPROVED) {
-      throw new BadRequestException('Only approved sellers can generate referral codes');
+      throw new BadRequestException(
+        'Only approved sellers can generate referral codes',
+      );
     }
 
     let code: string;
@@ -227,7 +251,9 @@ export class SellersService {
     });
   }
 
-  async findReferralCodeByCode(code: string): Promise<SellerReferralCode | null> {
+  async findReferralCodeByCode(
+    code: string,
+  ): Promise<SellerReferralCode | null> {
     return this.referralCodeRepo.findOne({
       where: { code, isActive: true },
       relations: { seller: true },
@@ -240,7 +266,9 @@ export class SellersService {
     });
 
     if (!referralCode) {
-      throw new NotFoundException(`Active referral code "${dto.code}" not found`);
+      throw new NotFoundException(
+        `Active referral code "${dto.code}" not found`,
+      );
     }
 
     const click = this.referralClickRepo.create({
@@ -277,7 +305,7 @@ export class SellersService {
       where: { sellerId },
     });
 
-    const activeCodes = codes.filter(c => c.isActive).length;
+    const activeCodes = codes.filter((c) => c.isActive).length;
     const totalClicks = codes.reduce((sum, code) => sum + code.usageCount, 0);
 
     return {
@@ -294,7 +322,9 @@ export class SellersService {
     });
 
     if (!code) {
-      throw new NotFoundException(`Referral code with ID "${codeId}" not found`);
+      throw new NotFoundException(
+        `Referral code with ID "${codeId}" not found`,
+      );
     }
 
     code.isActive = false;
@@ -307,7 +337,9 @@ export class SellersService {
     });
 
     if (!code) {
-      throw new NotFoundException(`Referral code with ID "${codeId}" not found`);
+      throw new NotFoundException(
+        `Referral code with ID "${codeId}" not found`,
+      );
     }
 
     code.isActive = true;

@@ -7,13 +7,7 @@ import { PurchaseController } from './controllers/purchase.controller';
 import { Product } from '../catalog/entities/product.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      PurchaseBatch,
-      CostTier,
-      Product,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([PurchaseBatch, CostTier, Product])],
   providers: [PurchaseService],
   controllers: [PurchaseController],
   exports: [PurchaseService],

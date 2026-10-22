@@ -11,14 +11,12 @@ import { Voucher } from '../../modules/commerce/entities/voucher.entity';
 import { Product } from '../../modules/catalog/entities/product.entity';
 import { Account } from '../../modules/identity/entities/account.entity';
 import { Role } from '../../modules/identity/entities/role.entity';
-import { SellerProfile } from '../../modules/sellers/entities/seller-profile.entity';
-import { SellerReferralCode } from '../../modules/sellers/entities/seller-referral-code.entity';
 import { SeasonStatus } from '../../modules/seasons/enums/season-status.enum';
 import { CampaignStatus } from '../../modules/chung-suc/enums/campaign-status.enum';
 import { PriceRuleType } from '../../modules/pricing/enums/price-rule-type.enum';
 import { DiscountType } from '../../modules/commerce/enums/discount-type.enum';
-import { SellerApprovalStatus } from '../../modules/sellers/enums/seller-approval-status.enum';
 import * as bcrypt from 'bcryptjs';
+import { AccountStatus } from '../../modules/identity/enums/account-status.enum';
 
 @Injectable()
 export class ChungSucSeedService {
@@ -45,10 +43,6 @@ export class ChungSucSeedService {
     private accountRepo: Repository<Account>,
     @InjectRepository(Role)
     private roleRepo: Repository<Role>,
-    @InjectRepository(SellerProfile)
-    private sellerRepo: Repository<SellerProfile>,
-    @InjectRepository(SellerReferralCode)
-    private sellerCodeRepo: Repository<SellerReferralCode>,
     private dataSource: DataSource,
   ) {}
 
@@ -67,16 +61,6 @@ export class ChungSucSeedService {
         await manager.save(Role, userRole);
       }
 
-      let sellerRole = await manager.findOne(Role, { where: { code: 'SELLER' } });
-      if (!sellerRole) {
-        sellerRole = manager.create(Role, {
-          code: 'SELLER',
-          name: 'Seller',
-          description: 'Seller with referral capabilities',
-        });
-        await manager.save(Role, sellerRole);
-      }
-
       let adminRole = await manager.findOne(Role, { where: { code: 'ADMIN' } });
       if (!adminRole) {
         adminRole = manager.create(Role, {
@@ -90,48 +74,18 @@ export class ChungSucSeedService {
       // 2. Create demo accounts
       const hashedPassword = await bcrypt.hash('Demo@123456', 10);
 
-      let demoUser = await manager.findOne(Account, { where: { email: 'user@demo.com' } });
+      let demoUser = await manager.findOne(Account, {
+        where: { email: 'user@demo.com' },
+      });
       if (!demoUser) {
         demoUser = manager.create(Account, {
           email: 'user@demo.com',
-          password: hashedPassword,
-          fullName: 'Demo User',
+          passwordHash: hashedPassword,
+          name: 'Demo User',
           roleId: userRole.id,
-          isActive: true,
+          status: AccountStatus.ACTIVE,
         });
         await manager.save(Account, demoUser);
-      }
-
-      let demoSeller = await manager.findOne(Account, { where: { email: 'seller@demo.com' } });
-      if (!demoSeller) {
-        demoSeller = manager.create(Account, {
-          email: 'seller@demo.com',
-          password: hashedPassword,
-          fullName: 'Demo Seller',
-          roleId: sellerRole.id,
-          isActive: true,
-        });
-        await manager.save(Account, demoSeller);
-
-        // Create seller profile
-        const sellerProfile = manager.create(SellerProfile, {
-          accountId: demoSeller.id,
-          businessName: 'Demo Seller Business',
-          businessType: 'Individual',
-          approvalStatus: SellerApprovalStatus.APPROVED,
-          approvedAt: new Date(),
-          commissionRate: '5.00',
-        });
-        await manager.save(SellerProfile, sellerProfile);
-
-        // Create referral code
-        const referralCode = manager.create(SellerReferralCode, {
-          sellerId: sellerProfile.id,
-          code: 'DEMOSELLER2024',
-          isActive: true,
-          usageCount: 0,
-        });
-        await manager.save(SellerReferralCode, referralCode);
       }
 
       // 3. Create demo products
@@ -168,7 +122,9 @@ export class ChungSucSeedService {
       seasonEnd.setMonth(seasonEnd.getMonth() + 1);
       seasonEnd.setDate(0);
 
-      let season = await manager.findOne(Season, { where: { slug: 'tet-2024' } });
+      let season = await manager.findOne(Season, {
+        where: { slug: 'tet-2024' },
+      });
       if (!season) {
         season = manager.create(Season, {
           name: 'Tết Nguyên Đán 2024',
@@ -199,23 +155,6 @@ export class ChungSucSeedService {
             isActive: true,
           });
           await manager.save(PriceTier, userTier);
-        }
-
-        // SELLER price (discounted)
-        const sellerTierExists = await manager.findOne(PriceTier, {
-          where: { productId: product.id, roleCode: 'SELLER' },
-        });
-        if (!sellerTierExists) {
-          const sellerTier = manager.create(PriceTier, {
-            productId: product.id,
-            seasonId: season.id,
-            roleCode: 'SELLER',
-            quantityFrom: 1,
-            quantityTo: null,
-            unitPrice: '40000.0000',
-            isActive: true,
-          });
-          await manager.save(PriceTier, sellerTier);
         }
 
         // Quantity tier: 10+
@@ -328,7 +267,9 @@ export class ChungSucSeedService {
       ];
 
       for (const pkgData of packageData) {
-        let pkg = await manager.findOne(Package, { where: { slug: pkgData.slug } });
+        let pkg = await manager.findOne(Package, {
+          where: { slug: pkgData.slug },
+        });
         if (!pkg) {
           pkg = manager.create(Package, {
             seasonId: season.id,
@@ -338,7 +279,7 @@ export class ChungSucSeedService {
             quantity: pkgData.quantity,
             displayPrice: pkgData.displayPrice,
             unitPrice: pkgData.unitPrice,
-            applicableRoles: ['USER', 'SELLER'],
+            applicableRoles: ['USER'],
             sortOrder: 0,
             isActive: true,
           });
@@ -362,10 +303,10 @@ export class ChungSucSeedService {
           name: 'Mã giảm giá Tết',
           discountType: DiscountType.PERCENTAGE,
           discountValue: '15.0000',
-          minimumPurchaseAmount: '100000.0000',
-          maximumDiscount: '50000.0000',
+          minimumOrderAmount: '100000.0000',
+          maximumDiscountAmount: '50000.0000',
           usageLimit: 100,
-          usagePerUser: 1,
+          perAccountLimit: 1,
           stackable: true,
           priority: 10,
         },
@@ -374,24 +315,26 @@ export class ChungSucSeedService {
           name: 'Giảm 50K cho đơn từ 500K',
           discountType: DiscountType.FIXED_AMOUNT,
           discountValue: '50000.0000',
-          minimumPurchaseAmount: '500000.0000',
+          minimumOrderAmount: '500000.0000',
           usageLimit: 50,
-          usagePerUser: 1,
+          perAccountLimit: 1,
           stackable: false,
           priority: 20,
         },
       ];
 
       for (const voucherInfo of voucherData) {
-        let voucher = await manager.findOne(Voucher, { where: { code: voucherInfo.code } });
+        let voucher = await manager.findOne(Voucher, {
+          where: { code: voucherInfo.code },
+        });
         if (!voucher) {
           voucher = manager.create(Voucher, {
             ...voucherInfo,
-            startDate: seasonStart,
-            endDate: seasonEnd,
+            startsAt: seasonStart,
+            endsAt: seasonEnd,
             isActive: true,
-            currentUsage: 0,
-            applicableRoles: ['USER', 'SELLER'],
+            usedCount: 0,
+            applicableRoles: ['USER'],
           });
           await manager.save(Voucher, voucher);
         }
@@ -400,8 +343,6 @@ export class ChungSucSeedService {
       this.logger.log('✅ CHUNG SỨC system seed completed!');
       this.logger.log('Demo accounts:');
       this.logger.log('  - User: user@demo.com / Demo@123456');
-      this.logger.log('  - Seller: seller@demo.com / Demo@123456');
-      this.logger.log('  - Seller Code: DEMOSELLER2024');
       this.logger.log(`  - Season: ${season.name}`);
       this.logger.log(`  - Campaign: ${campaign.name}`);
       this.logger.log('  - 3 Packages created');

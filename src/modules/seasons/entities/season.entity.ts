@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { SoftDeletableEntity } from '../../../common/base/soft-deletable.entity';
 import { SeasonStatus } from '../enums/season-status.enum';
 

@@ -6,10 +6,7 @@ import { SeasonsController } from './controllers/seasons.controller';
 import { IdentityModule } from '../identity/identity.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Season]),
-    IdentityModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Season]), IdentityModule],
   providers: [SeasonsService],
   controllers: [SeasonsController],
   exports: [SeasonsService],

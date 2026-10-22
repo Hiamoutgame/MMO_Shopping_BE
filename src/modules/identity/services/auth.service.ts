@@ -21,6 +21,7 @@ import { Account } from '../entities/account.entity';
 import { AuthSession } from '../entities/auth-session.entity';
 import { Role } from '../entities/role.entity';
 import { AccountStatus } from '../enums/account-status.enum';
+import { getEffectiveRoleCode } from '../../../common/auth/account-role';
 
 @Injectable()
 export class AuthService {
@@ -243,7 +244,7 @@ export class AuthService {
     });
     const savedSession = await this.sessionRepository.save(session);
 
-    const roleCode = account.role?.code || 'USER';
+    const roleCode = getEffectiveRoleCode(account.role?.code);
     const accessToken = await this.signAccessToken(
       account,
       roleCode,
@@ -346,7 +347,7 @@ export class AuthService {
       replacedBySessionId: savedNewSession.id,
     });
 
-    const roleCode = session.account.role?.code || 'USER';
+    const roleCode = getEffectiveRoleCode(session.account.role?.code);
     const accessToken = await this.signAccessToken(
       session.account,
       roleCode,
@@ -416,6 +417,12 @@ export class AuthService {
       });
     }
 
+    const effectiveCode = getEffectiveRoleCode(account.role?.code);
+    const role =
+      account.role?.code === effectiveCode
+        ? account.role
+        : await this.roleRepository.findOne({ where: { code: effectiveCode } });
+
     return {
       id: account.id,
       email: account.email,
@@ -425,11 +432,11 @@ export class AuthService {
       lastLoginAt: account.lastLoginAt,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
-      role: account.role
+      role: role
         ? {
-            id: account.role.id,
-            code: account.role.code,
-            name: account.role.name,
+            id: role.id,
+            code: role.code,
+            name: role.name,
           }
         : null,
     };

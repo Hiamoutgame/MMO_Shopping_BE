@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Patch,
+} from '@nestjs/common';
 import { PackagesService } from '../services/packages.service';
-import type { CreatePackageDto, UpdatePackageDto } from '../services/packages.service';
+import type {
+  CreatePackageDto,
+  UpdatePackageDto,
+} from '../services/packages.service';
 import { Package } from '../entities/package.entity';
 
 @Controller('v1/packages')
@@ -33,7 +45,10 @@ export class PackagesController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdatePackageDto): Promise<Package> {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePackageDto,
+  ): Promise<Package> {
     return this.packagesService.update(id, dto);
   }
 

@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProfitRecord } from '../entities/profit-record.entity';
 import { ProductTestCampaign } from '../entities/product-test-campaign.entity';
 import { Product } from '../../catalog/entities/product.entity';
@@ -104,7 +109,10 @@ export class AnalyticsService {
     });
   }
 
-  async getProfitSummary(startDate?: Date, endDate?: Date): Promise<{
+  async getProfitSummary(
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<{
     totalRevenue: string;
     totalCost: string;
     totalProfit: string;
@@ -151,10 +159,9 @@ export class AnalyticsService {
       new Decimal(0),
     );
 
-    const averageMargin = records.reduce(
-      (sum, r) => sum.plus(new Decimal(r.profitMargin)),
-      new Decimal(0),
-    ).div(records.length);
+    const averageMargin = records
+      .reduce((sum, r) => sum.plus(new Decimal(r.profitMargin)), new Decimal(0))
+      .div(records.length);
 
     return {
       totalRevenue: totalRevenue.toFixed(4),
@@ -165,13 +172,17 @@ export class AnalyticsService {
     };
   }
 
-  async createTestCampaign(dto: CreateTestCampaignDto): Promise<ProductTestCampaign> {
+  async createTestCampaign(
+    dto: CreateTestCampaignDto,
+  ): Promise<ProductTestCampaign> {
     const product = await this.productRepo.findOne({
       where: { id: dto.productId },
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID "${dto.productId}" not found`);
+      throw new NotFoundException(
+        `Product with ID "${dto.productId}" not found`,
+      );
     }
 
     const testBudget = new Decimal(dto.testBudget);
@@ -207,7 +218,9 @@ export class AnalyticsService {
     });
   }
 
-  async findTestCampaignsByProduct(productId: string): Promise<ProductTestCampaign[]> {
+  async findTestCampaignsByProduct(
+    productId: string,
+  ): Promise<ProductTestCampaign[]> {
     return this.testCampaignRepo.find({
       where: { productId },
       relations: { product: true, season: true },
@@ -228,7 +241,10 @@ export class AnalyticsService {
     return campaign;
   }
 
-  async updateTestCampaign(id: string, dto: UpdateTestCampaignDto): Promise<ProductTestCampaign> {
+  async updateTestCampaign(
+    id: string,
+    dto: UpdateTestCampaignDto,
+  ): Promise<ProductTestCampaign> {
     const campaign = await this.findTestCampaignById(id);
 
     if (dto.testBudget) {
@@ -305,7 +321,10 @@ export class AnalyticsService {
     const breakEven = new Decimal(campaign.profit).greaterThanOrEqualTo(0);
 
     let recommendation: 'SCALE' | 'CONTINUE' | 'FAILED';
-    if (soldPercentage.greaterThanOrEqualTo(80) && profitMargin.greaterThanOrEqualTo(20)) {
+    if (
+      soldPercentage.greaterThanOrEqualTo(80) &&
+      profitMargin.greaterThanOrEqualTo(20)
+    ) {
       recommendation = 'SCALE';
     } else if (soldPercentage.greaterThanOrEqualTo(50) && breakEven) {
       recommendation = 'CONTINUE';
@@ -325,7 +344,10 @@ export class AnalyticsService {
     };
   }
 
-  async markTestCampaignSuccess(campaignId: string, conclusions?: string): Promise<ProductTestCampaign> {
+  async markTestCampaignSuccess(
+    campaignId: string,
+    conclusions?: string,
+  ): Promise<ProductTestCampaign> {
     const campaign = await this.findTestCampaignById(campaignId);
     campaign.status = TestCampaignStatus.SUCCESS;
     campaign.endDate = new Date();
@@ -335,7 +357,10 @@ export class AnalyticsService {
     return this.testCampaignRepo.save(campaign);
   }
 
-  async markTestCampaignFailed(campaignId: string, conclusions?: string): Promise<ProductTestCampaign> {
+  async markTestCampaignFailed(
+    campaignId: string,
+    conclusions?: string,
+  ): Promise<ProductTestCampaign> {
     const campaign = await this.findTestCampaignById(campaignId);
     campaign.status = TestCampaignStatus.FAILED;
     campaign.endDate = new Date();
@@ -345,7 +370,10 @@ export class AnalyticsService {
     return this.testCampaignRepo.save(campaign);
   }
 
-  async markTestCampaignScale(campaignId: string, conclusions?: string): Promise<ProductTestCampaign> {
+  async markTestCampaignScale(
+    campaignId: string,
+    conclusions?: string,
+  ): Promise<ProductTestCampaign> {
     const campaign = await this.findTestCampaignById(campaignId);
     campaign.status = TestCampaignStatus.SCALE;
     campaign.endDate = new Date();

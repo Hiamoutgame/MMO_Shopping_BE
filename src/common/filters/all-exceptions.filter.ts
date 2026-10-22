@@ -1,4 +1,11 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 
 interface ErrorResponse {
@@ -8,7 +15,19 @@ interface ErrorResponse {
   method: string;
   message: string | string[];
   error?: string;
-  details?: any;
+  details?: unknown;
+}
+
+interface HttpExceptionBody {
+  message?: string | string[];
+  error?: string;
+  details?: unknown;
+}
+
+interface QueryFailedErrorLike {
+  code?: string;
+  detail?: string;
+  message?: string;
 }
 
 @Catch()
@@ -20,10 +39,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
     let error = 'Internal Server Error';
-    let details: any = undefined;
+    let details: unknown = undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -32,7 +51,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
-        const responseObj = exceptionResponse as any;
+        const responseObj = exceptionResponse as HttpExceptionBody;
         message = responseObj.message || message;
         error = responseObj.error || error;
         details = responseObj.details;
@@ -46,7 +65,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status = HttpStatus.BAD_REQUEST;
         error = 'Database Query Failed';
 
-        const queryError = exception as any;
+        const queryError = exception as QueryFailedErrorLike;
         if (queryError.code === '23505') {
           message = 'Duplicate entry. Record already exists.';
           details = queryError.detail;

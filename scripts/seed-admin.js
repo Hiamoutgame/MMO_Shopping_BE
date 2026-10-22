@@ -17,11 +17,15 @@ async function main() {
   const displayName = requireEnv('SEED_ADMIN_NAME');
 
   const client = new Client({
-    host: requireEnv('DB_HOST'),
-    port: Number(requireEnv('DB_PORT')),
-    user: requireEnv('DB_USERNAME'),
-    password: requireEnv('DB_PASSWORD'),
-    database: requireEnv('DB_DATABASE'),
+    ...(process.env.DATABASE_URL
+      ? { connectionString: process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL }
+      : {
+          host: requireEnv('DB_HOST'),
+          port: Number(requireEnv('DB_PORT')),
+          user: requireEnv('DB_USERNAME'),
+          password: requireEnv('DB_PASSWORD'),
+          database: requireEnv('DB_DATABASE'),
+        }),
     ssl: process.env.DB_SSL === 'true'
       ? { rejectUnauthorized: false }
       : false,

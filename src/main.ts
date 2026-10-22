@@ -41,7 +41,7 @@ async function bootstrap() {
       .setTitle(process.env.SWAGGER_TITLE || 'MMO Shopping API')
       .setDescription(
         process.env.SWAGGER_DESCRIPTION ||
-        'MMO Shopping Backend API with CHUNG SỨC (Group Buying) System'
+          'MMO Shopping Backend API with CHUNG SỨC (Group Buying) System',
       )
       .setVersion(process.env.SWAGGER_VERSION || '1.0.0')
       .addBearerAuth()
@@ -50,7 +50,6 @@ async function bootstrap() {
       .addTag('Chung Suc', 'Group buying campaigns')
       .addTag('Pricing', 'Price calculation and rules')
       .addTag('Packages', 'Product bundles')
-      .addTag('Sellers', 'Seller profiles and referral codes')
       .addTag('Coupons', 'Coupon validation and usage')
       .addTag('Purchase', 'Purchase batches and cost management')
       .addTag('Analytics', 'Profit tracking and test campaigns')
@@ -59,20 +58,17 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup(
-      process.env.SWAGGER_PATH || 'api/docs',
-      app,
-      document,
-      {
-        swaggerOptions: {
-          persistAuthorization: true,
-          tagsSorter: 'alpha',
-          operationsSorter: 'alpha',
-        },
+    SwaggerModule.setup(process.env.SWAGGER_PATH || 'api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
       },
-    );
+    });
 
-    console.log(`📚 Swagger documentation: http://localhost:${process.env.PORT || 3000}/${process.env.SWAGGER_PATH || 'api/docs'}`);
+    console.log(
+      `📚 Swagger documentation: http://localhost:${process.env.PORT || 3000}/${process.env.SWAGGER_PATH || 'api/docs'}`,
+    );
   }
 
   const port = process.env.PORT || 3000;
@@ -82,4 +78,4 @@ async function bootstrap() {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
-bootstrap();
+void bootstrap();

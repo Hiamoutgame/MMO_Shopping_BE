@@ -1,0 +1,89 @@
+# Production-like local stack: backend + PostgreSQL.
+# Usage:  docker compose up -d --build
+# Secrets are read from the repo .env file if present (compose interpolation),
+# otherwise the defaults below are used (development only!).
+name: mmo-shopping
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mmo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mmo_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-mmo_shopping}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-mmo} -d ${POSTGRES_DB:-mmo_shopping}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-mmo-shopping-be:local}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      # --- database: points at the compose "db" service ---
+      DB_HOST: db
+      DB_PORT: '5432'
+      DB_USERNAME: ${POSTGRES_USER:-mmo}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-mmo_dev_password}
+      DB_DATABASE: ${POSTGRES_DB:-mmo_shopping}
+      DB_SSL: 'false'
+      # --- application secrets (override via .env on the host) ---
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      REFRESH_TOKEN_EXPIRES_DAYS: ${REFRESH_TOKEN_EXPIRES_DAYS:-7}
+      INVENTORY_ENCRYPTION_KEY: ${INVENTORY_ENCRYPTION_KEY:-change-me-inventory}
+      PAYMENT_CALLBACK_SECRET: ${PAYMENT_CALLBACK_SECRET:-change-me-payment}
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-change-me-integration}
+      HOANPHI_API_BASE_URL: ${HOANPHI_API_BASE_URL:-https://hoanphi247.vn/api/v1/openapi}
+      HOANPHI_TIMEOUT_MS: ${HOANPHI_TIMEOUT_MS:-10000}
+      # --- swagger ---
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      SWAGGER_PATH: ${SWAGGER_PATH:-api/docs}
+      SWAGGER_TITLE: ${SWAGGER_TITLE:-MMO Shopping API}
+      SWAGGER_DESCRIPTION: ${SWAGGER_DESCRIPTION:-MMO Shopping Backend API}
+      SWAGGER_VERSION: ${SWAGGER_VERSION:-1.0.0}
+      # --- entrypoint behaviour ---
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      RUN_SEED_ADMIN: ${RUN_SEED_ADMIN:-false}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Admin}
+    ports:
+      - '${APP_PORT:-3000}:3000'
+
+  # Optional DB UI: docker compose --profile tools up -d
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    profiles: ['tools']
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - '127.0.0.1:${ADMINER_PORT:-8080}:8080'
+
+volumes:
+  db-data:

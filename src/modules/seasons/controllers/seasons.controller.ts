@@ -1,10 +1,28 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, ValidationPipe, Patch } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  ValidationPipe,
+  Patch,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { SeasonsService } from '../services/seasons.service';
-import type { CreateSeasonDto, UpdateSeasonDto } from '../services/seasons.service';
+import type {
+  CreateSeasonDto,
+  UpdateSeasonDto,
+} from '../services/seasons.service';
 import { Season } from '../entities/season.entity';
 import { RolesGuard } from '../../../common/guards/roles.guard';
-import { AdminOnly, AllRoles } from '../../../common/decorators/roles.decorator';
+import { AdminOnly } from '../../../common/decorators/roles.decorator';
 import { createApiResponse } from '../../../common/utils/api-response';
 
 @ApiTags('Seasons')
@@ -58,7 +76,10 @@ export class SeasonsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update season (Admin only)' })
   @ApiResponse({ status: 200, description: 'Season updated successfully' })
-  async update(@Param('id') id: string, @Body(ValidationPipe) dto: UpdateSeasonDto): Promise<Season> {
+  async update(
+    @Param('id') id: string,
+    @Body(ValidationPipe) dto: UpdateSeasonDto,
+  ): Promise<Season> {
     return this.seasonsService.update(id, dto);
   }
 

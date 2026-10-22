@@ -1,7 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { AccountStatus } from '../enums/account-status.enum';
+import { ACTIVE_ROLE_CODES } from '../../../common/auth/account-role';
 
 export class QueryAccountDto {
   @ApiPropertyOptional({ default: 1, example: 1, minimum: 1 })
@@ -23,7 +31,11 @@ export class QueryAccountDto {
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional({ example: 'USER' })
+  @ApiPropertyOptional({ enum: ACTIVE_ROLE_CODES, example: 'USER' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
+  @IsIn(ACTIVE_ROLE_CODES)
   @IsString()
   @IsOptional()
   role?: string;

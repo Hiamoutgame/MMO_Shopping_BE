@@ -9,10 +9,11 @@ import { Product } from '../catalog/entities/product.entity';
 import { Account } from '../identity/entities/account.entity';
 import { Package } from '../packages/entities/package.entity';
 import { Voucher } from '../commerce/entities/voucher.entity';
-import { SellerReferralCode } from '../sellers/entities/seller-referral-code.entity';
+import { IdentityModule } from '../identity/identity.module';
 
 @Module({
   imports: [
+    IdentityModule,
     TypeOrmModule.forFeature([
       PriceRule,
       PriceTier,
@@ -21,7 +22,6 @@ import { SellerReferralCode } from '../sellers/entities/seller-referral-code.ent
       Account,
       Package,
       Voucher,
-      SellerReferralCode,
     ]),
   ],
   providers: [PriceEngineService],

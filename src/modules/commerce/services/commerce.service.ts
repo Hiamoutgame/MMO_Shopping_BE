@@ -495,6 +495,12 @@ export class CommerceService {
     if (!voucher) {
       throw this.notFound('Voucher not found.');
     }
+    if (
+      voucher.applicableRoles?.length &&
+      !voucher.applicableRoles.includes('USER')
+    ) {
+      throw new BadRequestException('Voucher is not available to customers.');
+    }
     const now = new Date();
     if (now < voucher.startsAt || now > voucher.endsAt) {
       throw new BadRequestException('Voucher is not active now.');

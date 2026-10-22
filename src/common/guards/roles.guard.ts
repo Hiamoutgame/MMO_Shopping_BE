@@ -12,6 +12,7 @@ import type { Request } from 'express';
 import { Repository } from 'typeorm';
 import { ActiveUserData } from '../decorators/current-user.decorator';
 import { Account } from '../../modules/identity/entities/account.entity';
+import { getEffectiveRoleCode } from '../auth/account-role';
 
 export const ROLES_KEY = 'roles';
 
@@ -62,16 +63,17 @@ export class RolesGuard implements CanActivate {
         throw new UnauthorizedException('Account not found');
       }
 
+      const roleCode = getEffectiveRoleCode(account.role?.code);
       request.user = {
         ...payload,
         id: account.id,
         email: account.email,
-        roleCode: account.role.code,
-        role: account.role,
+        roleCode,
+        role: { code: roleCode },
         subject: account.id,
       };
 
-      const hasRole = requiredRoles.includes(account.role.code);
+      const hasRole = requiredRoles.includes(roleCode);
 
       if (!hasRole) {
         throw new ForbiddenException(

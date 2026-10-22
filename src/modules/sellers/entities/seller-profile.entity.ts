@@ -10,10 +10,20 @@ export class SellerProfile extends SoftDeletableEntity {
   @Column({ name: 'account_id', type: 'uuid', unique: true })
   accountId!: string;
 
-  @Column({ name: 'business_name', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'business_name',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   businessName?: string | null;
 
-  @Column({ name: 'business_type', type: 'varchar', length: 100, nullable: true })
+  @Column({
+    name: 'business_type',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   businessType?: string | null;
 
   @Column({ name: 'tax_id', type: 'varchar', length: 50, nullable: true })
@@ -33,7 +43,13 @@ export class SellerProfile extends SoftDeletableEntity {
   @Column({ name: 'approved_by', type: 'uuid', nullable: true })
   approvedBy?: string | null;
 
-  @Column({ name: 'commission_rate', type: 'numeric', precision: 5, scale: 2, nullable: true })
+  @Column({
+    name: 'commission_rate',
+    type: 'numeric',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
   commissionRate?: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

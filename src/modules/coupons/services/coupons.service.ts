@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CouponUsage } from '../entities/coupon-usage.entity';
@@ -62,6 +67,13 @@ export class CouponsService {
       return { valid: false, reason: 'Coupon not found or inactive' };
     }
 
+    if (
+      voucher.applicableRoles?.length &&
+      !voucher.applicableRoles.includes('USER')
+    ) {
+      return { valid: false, reason: 'Coupon is not available to customers' };
+    }
+
     const now = new Date();
 
     if (voucher.startsAt && voucher.startsAt > now) {
@@ -85,7 +97,10 @@ export class CouponsService {
       });
 
       if (userUsageCount >= voucher.perAccountLimit) {
-        return { valid: false, reason: 'User usage limit reached for this coupon' };
+        return {
+          valid: false,
+          reason: 'User usage limit reached for this coupon',
+        };
       }
     }
 
@@ -106,13 +121,16 @@ export class CouponsService {
       });
 
       if (couponProducts.length > 0) {
-        const applicableProductIds = couponProducts.map(cp => cp.productId);
-        const hasApplicableProduct = dto.productIds.some(pid =>
+        const applicableProductIds = couponProducts.map((cp) => cp.productId);
+        const hasApplicableProduct = dto.productIds.some((pid) =>
           applicableProductIds.includes(pid),
         );
 
         if (!hasApplicableProduct) {
-          return { valid: false, reason: 'Coupon not applicable to any products in cart' };
+          return {
+            valid: false,
+            reason: 'Coupon not applicable to any products in cart',
+          };
         }
       }
     }
@@ -123,9 +141,12 @@ export class CouponsService {
       });
 
       if (couponSeasons.length > 0) {
-        const applicableSeasonIds = couponSeasons.map(cs => cs.seasonId);
+        const applicableSeasonIds = couponSeasons.map((cs) => cs.seasonId);
         if (!applicableSeasonIds.includes(dto.seasonId)) {
-          return { valid: false, reason: 'Coupon not applicable to this season' };
+          return {
+            valid: false,
+            reason: 'Coupon not applicable to this season',
+          };
         }
       }
     }
@@ -136,9 +157,12 @@ export class CouponsService {
       });
 
       if (couponPackages.length > 0) {
-        const applicablePackageIds = couponPackages.map(cp => cp.packageId);
+        const applicablePackageIds = couponPackages.map((cp) => cp.packageId);
         if (!applicablePackageIds.includes(dto.packageId)) {
-          return { valid: false, reason: 'Coupon not applicable to this package' };
+          return {
+            valid: false,
+            reason: 'Coupon not applicable to this package',
+          };
         }
       }
     }
@@ -154,7 +178,9 @@ export class CouponsService {
       });
 
       if (!voucher) {
-        throw new NotFoundException(`Voucher with ID "${dto.voucherId}" not found`);
+        throw new NotFoundException(
+          `Voucher with ID "${dto.voucherId}" not found`,
+        );
       }
 
       if (voucher.usageLimit && voucher.usedCount >= voucher.usageLimit) {
@@ -166,7 +192,9 @@ export class CouponsService {
       });
 
       if (!account) {
-        throw new NotFoundException(`Account with ID "${dto.accountId}" not found`);
+        throw new NotFoundException(
+          `Account with ID "${dto.accountId}" not found`,
+        );
       }
 
       const order = await manager.findOne(Order, {
@@ -224,15 +252,14 @@ export class CouponsService {
       where: { voucherId },
     });
 
-    const uniqueUserIds = new Set(usages.map(u => u.accountId));
+    const uniqueUserIds = new Set(usages.map((u) => u.accountId));
     const totalDiscount = usages.reduce(
       (sum, u) => sum.plus(new Decimal(u.discountAmount)),
       new Decimal(0),
     );
 
-    const avgDiscount = usages.length > 0
-      ? totalDiscount.div(usages.length)
-      : new Decimal(0);
+    const avgDiscount =
+      usages.length > 0 ? totalDiscount.div(usages.length) : new Decimal(0);
 
     return {
       totalUsage: usages.length,
@@ -242,7 +269,10 @@ export class CouponsService {
     };
   }
 
-  async linkProductsToCoupon(voucherId: string, productIds: string[]): Promise<void> {
+  async linkProductsToCoupon(
+    voucherId: string,
+    productIds: string[],
+  ): Promise<void> {
     const voucher = await this.voucherRepo.findOne({
       where: { id: voucherId },
     });
@@ -262,7 +292,10 @@ export class CouponsService {
     }
   }
 
-  async linkSeasonsToCoupon(voucherId: string, seasonIds: string[]): Promise<void> {
+  async linkSeasonsToCoupon(
+    voucherId: string,
+    seasonIds: string[],
+  ): Promise<void> {
     const voucher = await this.voucherRepo.findOne({
       where: { id: voucherId },
     });
@@ -282,7 +315,10 @@ export class CouponsService {
     }
   }
 
-  async linkPackagesToCoupon(voucherId: string, packageIds: string[]): Promise<void> {
+  async linkPackagesToCoupon(
+    voucherId: string,
+    packageIds: string[],
+  ): Promise<void> {
     const voucher = await this.voucherRepo.findOne({
       where: { id: voucherId },
     });

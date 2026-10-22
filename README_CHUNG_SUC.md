@@ -1,5 +1,7 @@
 # MMO Shopping - CHUNG SỨC System
 
+> **Tài liệu lịch sử — 23/10/2026:** Phần role SELLER, seller code, hoa hồng, tài khoản demo và danh sách API bên dưới không phải hợp đồng đích hoặc bằng chứng đã kiểm thử. Đọc [nghiệp vụ shop một chủ](../docs/business/single-owner-shop.md), [API](../docs/api/single-owner-shop.md), [plan](../docs/plan/single-owner-shop.md), [rule](../docs/rule/business.md). Chủ shop dùng `ADMIN`, khách dùng `USER`; giữ dịch vụ tiếp sức mã mời game nhưng ngừng seller nội bộ theo kế hoạch. Chưa đổi code/DB trong đợt sửa docs.
+
 Complete e-commerce platform với hệ thống **CHUNG SỨC** (tiếp sức mã mời) - khách gửi mã mời trong game, tài khoản của Shop nhập mã đó để khách đủ lượt mời.
 
 ## 🎯 Tính Năng Chính

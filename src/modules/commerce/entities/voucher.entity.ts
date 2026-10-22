@@ -74,6 +74,10 @@ export class Voucher extends SoftDeletableEntity {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
+  // Column already introduced by AddChungSucSystem; preserve its audience rules.
+  @Column({ name: 'applicable_roles', type: 'jsonb', nullable: true })
+  applicableRoles?: string[] | null;
+
   @OneToMany(() => Order, (order) => order.voucher)
   orders!: Order[];
 }

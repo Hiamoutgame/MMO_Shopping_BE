@@ -1,4 +1,16 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "tests", "playwright.config.ts", "dist", "**/*spec.ts"]
+  "compilerOptions": {
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+  },
+  "exclude": [
+    "node_modules",
+    "test",
+    "tests",
+    "playwright.config.ts",
+    "playwright.verify.config.ts",
+    "dist",
+    "**/*spec.ts"
+  ]
 }

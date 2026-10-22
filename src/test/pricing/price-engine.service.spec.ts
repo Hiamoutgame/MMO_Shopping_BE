@@ -7,7 +7,6 @@ import { PriceTier } from '../../modules/pricing/entities/price-tier.entity';
 import { PriceRule } from '../../modules/pricing/entities/price-rule.entity';
 import { Package } from '../../modules/packages/entities/package.entity';
 import { Voucher } from '../../modules/commerce/entities/voucher.entity';
-import { SellerReferralCode } from '../../modules/sellers/entities/seller-referral-code.entity';
 import { DiscountType } from '../../modules/commerce/enums/discount-type.enum';
 import Decimal from 'decimal.js';
 
@@ -63,11 +62,8 @@ describe('PriceEngineService', () => {
     findOne: jest.fn().mockResolvedValue(null),
   };
 
-  const mockSellerCodeRepo = {
-    findOne: jest.fn().mockResolvedValue(null),
-  };
-
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PriceEngineService,
@@ -94,10 +90,6 @@ describe('PriceEngineService', () => {
         {
           provide: getRepositoryToken(Voucher),
           useValue: mockVoucherRepo,
-        },
-        {
-          provide: getRepositoryToken(SellerReferralCode),
-          useValue: mockSellerCodeRepo,
         },
       ],
     }).compile();
@@ -126,35 +118,44 @@ describe('PriceEngineService', () => {
   });
 
   describe('calculatePrice - Role-Based Pricing', () => {
-    it('should apply SELLER price tier', async () => {
-      const sellerAccount = {
-        ...mockAccount,
-        role: { code: 'SELLER' },
-      };
+    it.each(['SELLER', 'ADMIN'])(
+      'uses customer pricing for a %s account',
+      async (storedRole) => {
+        mockAccountRepo.findOne.mockResolvedValueOnce({
+          ...mockAccount,
+          role: { code: storedRole },
+        });
+        let selectedRole = '';
+        mockPriceTierRepo.createQueryBuilder.mockReturnValueOnce({
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockImplementation(function (
+            this: unknown,
+            _sql: string,
+            params?: { roleCode?: string },
+          ) {
+            if (params?.roleCode) selectedRole = params.roleCode;
+            return this;
+          }),
+          orderBy: jest.fn().mockReturnThis(),
+          addOrderBy: jest.fn().mockReturnThis(),
+          getOne: jest.fn().mockImplementation(() =>
+            Promise.resolve({
+              unitPrice: selectedRole === 'USER' ? '45000.0000' : '40000.0000',
+              roleCode: selectedRole,
+            }),
+          ),
+        });
 
-      mockAccountRepo.findOne.mockResolvedValueOnce(sellerAccount);
-      mockPriceTierRepo.createQueryBuilder.mockReturnValueOnce({
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        addOrderBy: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue({
-          unitPrice: '40000.0000',
-          roleCode: 'SELLER',
-        }),
-      });
+        const result = await service.calculatePrice({
+          productId: 'product-1',
+          accountId: 'account-1',
+          quantity: 1,
+        });
 
-      const result = await service.calculatePrice({
-        productId: 'product-1',
-        accountId: 'account-1',
-        quantity: 1,
-      });
-
-      expect(result.finalPrice).toBe('40000.0000');
-      expect(result.breakdown).toHaveLength(2);
-      expect(result.breakdown[1].step).toBe('2. SELLER Price');
-      expect(result.breakdown[1].discountAmount).toBe('10000.0000');
-    });
+        expect(result.finalPrice).toBe('45000.0000');
+        expect(result.breakdown[1].step).toBe('2. USER Price');
+      },
+    );
   });
 
   describe('calculatePrice - Quantity Discount', () => {
@@ -185,11 +186,30 @@ describe('PriceEngineService', () => {
       });
 
       expect(result.finalPrice).toBe('45000.0000');
-      expect(result.breakdown.some(b => b.step === '3. Quantity Discount')).toBe(true);
+      expect(
+        result.breakdown.some((b) => b.step === '3. Quantity Discount'),
+      ).toBe(true);
     });
   });
 
   describe('calculatePrice - Coupon', () => {
+    it('does not apply a legacy seller-only coupon to a customer', async () => {
+      mockVoucherRepo.findOne.mockResolvedValueOnce({
+        code: 'SELLER-ONLY',
+        discountType: DiscountType.PERCENTAGE,
+        discountValue: '20.0000',
+        isActive: true,
+        applicableRoles: ['SELLER'],
+      });
+      const result = await service.calculatePrice({
+        productId: 'product-1',
+        accountId: 'account-1',
+        quantity: 1,
+        couponCode: 'SELLER-ONLY',
+      });
+      expect(result.finalPrice).toBe('50000.0000');
+    });
+
     it('should apply percentage coupon', async () => {
       mockVoucherRepo.findOne.mockResolvedValueOnce({
         id: 'voucher-1',
@@ -211,7 +231,9 @@ describe('PriceEngineService', () => {
       // 50000 - 20% = 40000
       expect(result.finalPrice).toBe('40000.0000');
       expect(result.totalDiscount).toBe('10000.0000');
-      expect(result.breakdown.some(b => b.step === '7. Coupon Discount')).toBe(true);
+      expect(
+        result.breakdown.some((b) => b.step === '7. Coupon Discount'),
+      ).toBe(true);
     });
 
     it('should apply fixed amount coupon', async () => {
@@ -243,7 +265,7 @@ describe('PriceEngineService', () => {
         code: 'SALE50',
         discountType: DiscountType.PERCENTAGE,
         discountValue: '50.0000',
-        maximumDiscount: '10000.0000',
+        maximumDiscountAmount: '10000.0000',
         isActive: true,
         startDate: new Date('2024-01-01'),
         endDate: new Date('2025-12-31'),
@@ -291,13 +313,13 @@ describe('PriceEngineService', () => {
 
   describe('calculatePrice - Sequential Discounts', () => {
     it('should apply discounts sequentially, not additively', async () => {
-      // Seller tier: 40000 (20% off from 50000)
-      const sellerAccount = {
+      // Customer tier: 40000 (20% off from 50000)
+      const customerAccount = {
         ...mockAccount,
-        role: { code: 'SELLER' },
+        role: { code: 'USER' },
       };
 
-      mockAccountRepo.findOne.mockResolvedValueOnce(sellerAccount);
+      mockAccountRepo.findOne.mockResolvedValueOnce(customerAccount);
       mockPriceTierRepo.createQueryBuilder
         .mockReturnValueOnce({
           where: jest.fn().mockReturnThis(),
@@ -306,7 +328,7 @@ describe('PriceEngineService', () => {
           addOrderBy: jest.fn().mockReturnThis(),
           getOne: jest.fn().mockResolvedValue({
             unitPrice: '40000.0000',
-            roleCode: 'SELLER',
+            roleCode: 'USER',
           }),
         })
         .mockReturnValueOnce({
@@ -335,11 +357,14 @@ describe('PriceEngineService', () => {
         couponCode: 'EXTRA10',
       });
 
-      // Sequential: 50000 → 40000 (SELLER) → 36000 (10% coupon)
+      // Sequential: 50000 → 40000 (customer tier) → 36000 (10% coupon)
       // NOT additive: 50000 - 30% = 35000
       expect(result.finalPrice).toBe('36000.0000');
       expect(result.totalDiscount).toBe('14000.0000');
-      expect(new Decimal(result.discountPercentage).toNumber()).toBeCloseTo(28, 0);
+      expect(new Decimal(result.discountPercentage).toNumber()).toBeCloseTo(
+        28,
+        0,
+      );
     });
   });
 });

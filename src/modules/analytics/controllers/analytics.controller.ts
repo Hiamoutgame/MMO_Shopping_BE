@@ -1,6 +1,19 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Patch,
+} from '@nestjs/common';
 import { AnalyticsService } from '../services/analytics.service';
-import type { CreateProfitRecordDto, CreateTestCampaignDto, UpdateTestCampaignDto } from '../services/analytics.service';
+import type {
+  CreateProfitRecordDto,
+  CreateTestCampaignDto,
+  UpdateTestCampaignDto,
+} from '../services/analytics.service';
 import { ProfitRecord } from '../entities/profit-record.entity';
 import { ProductTestCampaign } from '../entities/product-test-campaign.entity';
 
@@ -9,7 +22,9 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Post('profit-records')
-  async createProfitRecord(@Body() dto: CreateProfitRecordDto): Promise<ProfitRecord> {
+  async createProfitRecord(
+    @Body() dto: CreateProfitRecordDto,
+  ): Promise<ProfitRecord> {
     return this.analyticsService.createProfitRecord(dto);
   }
 
@@ -42,12 +57,16 @@ export class AnalyticsController {
   }
 
   @Post('test-campaigns')
-  async createTestCampaign(@Body() dto: CreateTestCampaignDto): Promise<ProductTestCampaign> {
+  async createTestCampaign(
+    @Body() dto: CreateTestCampaignDto,
+  ): Promise<ProductTestCampaign> {
     return this.analyticsService.createTestCampaign(dto);
   }
 
   @Get('test-campaigns')
-  async findAllTestCampaigns(@Query('productId') productId?: string): Promise<ProductTestCampaign[]> {
+  async findAllTestCampaigns(
+    @Query('productId') productId?: string,
+  ): Promise<ProductTestCampaign[]> {
     if (productId) {
       return this.analyticsService.findTestCampaignsByProduct(productId);
     }
@@ -55,7 +74,9 @@ export class AnalyticsController {
   }
 
   @Get('test-campaigns/:id')
-  async findTestCampaignById(@Param('id') id: string): Promise<ProductTestCampaign> {
+  async findTestCampaignById(
+    @Param('id') id: string,
+  ): Promise<ProductTestCampaign> {
     return this.analyticsService.findTestCampaignById(id);
   }
 
@@ -72,7 +93,11 @@ export class AnalyticsController {
     @Param('id') id: string,
     @Body() body: { quantity: number; salePrice: string },
   ): Promise<ProductTestCampaign> {
-    return this.analyticsService.recordTestCampaignSale(id, body.quantity, body.salePrice);
+    return this.analyticsService.recordTestCampaignSale(
+      id,
+      body.quantity,
+      body.salePrice,
+    );
   }
 
   @Get('test-campaigns/:id/evaluation')

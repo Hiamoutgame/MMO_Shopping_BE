@@ -11,8 +11,6 @@ import { Voucher } from '../../modules/commerce/entities/voucher.entity';
 import { Product } from '../../modules/catalog/entities/product.entity';
 import { Account } from '../../modules/identity/entities/account.entity';
 import { Role } from '../../modules/identity/entities/role.entity';
-import { SellerProfile } from '../../modules/sellers/entities/seller-profile.entity';
-import { SellerReferralCode } from '../../modules/sellers/entities/seller-referral-code.entity';
 
 @Module({
   imports: [
@@ -27,8 +25,6 @@ import { SellerReferralCode } from '../../modules/sellers/entities/seller-referr
       Product,
       Account,
       Role,
-      SellerProfile,
-      SellerReferralCode,
     ]),
   ],
   providers: [ChungSucSeedService],

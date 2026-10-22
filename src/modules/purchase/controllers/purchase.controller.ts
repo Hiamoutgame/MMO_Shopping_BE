@@ -1,6 +1,20 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Patch,
+} from '@nestjs/common';
 import { PurchaseService } from '../services/purchase.service';
-import type { CreatePurchaseBatchDto, UpdatePurchaseBatchDto, CreateCostTierDto, UpdateCostTierDto } from '../services/purchase.service';
+import type {
+  CreatePurchaseBatchDto,
+  UpdatePurchaseBatchDto,
+  CreateCostTierDto,
+  UpdateCostTierDto,
+} from '../services/purchase.service';
 import { PurchaseBatch } from '../entities/purchase-batch.entity';
 import { CostTier } from '../entities/cost-tier.entity';
 
@@ -9,7 +23,9 @@ export class PurchaseController {
   constructor(private readonly purchaseService: PurchaseService) {}
 
   @Post('batches')
-  async createBatch(@Body() dto: CreatePurchaseBatchDto): Promise<PurchaseBatch> {
+  async createBatch(
+    @Body() dto: CreatePurchaseBatchDto,
+  ): Promise<PurchaseBatch> {
     return this.purchaseService.createBatch(dto);
   }
 
@@ -33,7 +49,10 @@ export class PurchaseController {
   }
 
   @Patch('batches/:id')
-  async updateBatch(@Param('id') id: string, @Body() dto: UpdatePurchaseBatchDto): Promise<PurchaseBatch> {
+  async updateBatch(
+    @Param('id') id: string,
+    @Body() dto: UpdatePurchaseBatchDto,
+  ): Promise<PurchaseBatch> {
     return this.purchaseService.updateBatch(id, dto);
   }
 
@@ -48,7 +67,9 @@ export class PurchaseController {
   }
 
   @Get('cost-tiers')
-  async findAllCostTiers(@Query('productId') productId?: string): Promise<CostTier[]> {
+  async findAllCostTiers(
+    @Query('productId') productId?: string,
+  ): Promise<CostTier[]> {
     if (productId) {
       return this.purchaseService.findCostTiersByProduct(productId);
     }
@@ -61,7 +82,10 @@ export class PurchaseController {
   }
 
   @Patch('cost-tiers/:id')
-  async updateCostTier(@Param('id') id: string, @Body() dto: UpdateCostTierDto): Promise<CostTier> {
+  async updateCostTier(
+    @Param('id') id: string,
+    @Body() dto: UpdateCostTierDto,
+  ): Promise<CostTier> {
     return this.purchaseService.updateCostTier(id, dto);
   }
 
@@ -75,7 +99,10 @@ export class PurchaseController {
     @Query('productId') productId: string,
     @Query('quantity') quantity: string,
   ) {
-    const cost = await this.purchaseService.getCostForQuantity(productId, parseInt(quantity, 10));
+    const cost = await this.purchaseService.getCostForQuantity(
+      productId,
+      parseInt(quantity, 10),
+    );
     return { cost: cost.toFixed(4) };
   }
 

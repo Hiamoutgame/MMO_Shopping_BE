@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Season } from '../entities/season.entity';
@@ -40,7 +45,9 @@ export class SeasonsService {
     });
 
     if (existing) {
-      throw new BadRequestException(`Season with slug "${dto.slug}" already exists`);
+      throw new BadRequestException(
+        `Season with slug "${dto.slug}" already exists`,
+      );
     }
 
     if (dto.startDate >= dto.endDate) {
@@ -108,7 +115,9 @@ export class SeasonsService {
     } else if (now >= season.startDate && now <= season.endDate) {
       season.status = SeasonStatus.ACTIVE;
     } else {
-      throw new BadRequestException('Cannot activate a season that has already ended');
+      throw new BadRequestException(
+        'Cannot activate a season that has already ended',
+      );
     }
 
     return this.seasonRepo.save(season);

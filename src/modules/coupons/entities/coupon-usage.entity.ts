@@ -21,7 +21,11 @@ export class CouponUsage extends UuidEntity {
   @Column({ name: 'discount_amount', type: 'numeric', precision: 19, scale: 4 })
   discountAmount!: string;
 
-  @Column({ name: 'used_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'used_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   usedAt!: Date;
 
   @ManyToOne(() => Voucher)

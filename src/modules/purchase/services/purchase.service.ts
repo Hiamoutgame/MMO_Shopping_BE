@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PurchaseBatch } from '../entities/purchase-batch.entity';
@@ -59,7 +64,9 @@ export class PurchaseService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID "${dto.productId}" not found`);
+      throw new NotFoundException(
+        `Product with ID "${dto.productId}" not found`,
+      );
     }
 
     const costPerUnit = new Decimal(dto.costPerUnit);
@@ -117,7 +124,10 @@ export class PurchaseService {
     return batch;
   }
 
-  async updateBatch(id: string, dto: UpdatePurchaseBatchDto): Promise<PurchaseBatch> {
+  async updateBatch(
+    id: string,
+    dto: UpdatePurchaseBatchDto,
+  ): Promise<PurchaseBatch> {
     const batch = await this.findBatchById(id);
 
     if (dto.costPerUnit) {
@@ -126,7 +136,8 @@ export class PurchaseService {
         throw new BadRequestException('Cost per unit must be greater than 0');
       }
 
-      const quantity = dto.quantity !== undefined ? dto.quantity : batch.quantity;
+      const quantity =
+        dto.quantity !== undefined ? dto.quantity : batch.quantity;
       const totalCost = costPerUnit.times(quantity);
       batch.totalCost = totalCost.toFixed(4);
     }
@@ -158,7 +169,9 @@ export class PurchaseService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID "${dto.productId}" not found`);
+      throw new NotFoundException(
+        `Product with ID "${dto.productId}" not found`,
+      );
     }
 
     const costPerUnit = new Decimal(dto.costPerUnit);
@@ -171,7 +184,9 @@ export class PurchaseService {
     }
 
     if (dto.quantityTo !== undefined && dto.quantityTo <= dto.quantityFrom) {
-      throw new BadRequestException('Quantity to must be greater than quantity from');
+      throw new BadRequestException(
+        'Quantity to must be greater than quantity from',
+      );
     }
 
     const tier = this.costTierRepo.create({
@@ -223,11 +238,19 @@ export class PurchaseService {
       throw new BadRequestException('Quantity from must be greater than 0');
     }
 
-    const quantityFrom = dto.quantityFrom !== undefined ? dto.quantityFrom : tier.quantityFrom;
-    const quantityTo = dto.quantityTo !== undefined ? dto.quantityTo : tier.quantityTo;
+    const quantityFrom =
+      dto.quantityFrom !== undefined ? dto.quantityFrom : tier.quantityFrom;
+    const quantityTo =
+      dto.quantityTo !== undefined ? dto.quantityTo : tier.quantityTo;
 
-    if (quantityTo !== null && quantityTo !== undefined && quantityTo <= quantityFrom) {
-      throw new BadRequestException('Quantity to must be greater than quantity from');
+    if (
+      quantityTo !== null &&
+      quantityTo !== undefined &&
+      quantityTo <= quantityFrom
+    ) {
+      throw new BadRequestException(
+        'Quantity to must be greater than quantity from',
+      );
     }
 
     Object.assign(tier, dto);
@@ -239,13 +262,18 @@ export class PurchaseService {
     await this.costTierRepo.softRemove(tier);
   }
 
-  async getCostForQuantity(productId: string, quantity: number): Promise<Decimal> {
+  async getCostForQuantity(
+    productId: string,
+    quantity: number,
+  ): Promise<Decimal> {
     const tier = await this.costTierRepo
       .createQueryBuilder('tier')
       .where('tier.productId = :productId', { productId })
       .andWhere('tier.isActive = :isActive', { isActive: true })
       .andWhere('tier.quantityFrom <= :quantity', { quantity })
-      .andWhere('(tier.quantityTo IS NULL OR tier.quantityTo >= :quantity)', { quantity })
+      .andWhere('(tier.quantityTo IS NULL OR tier.quantityTo >= :quantity)', {
+        quantity,
+      })
       .orderBy('tier.quantityFrom', 'DESC')
       .getOne();
 
@@ -274,7 +302,9 @@ export class PurchaseService {
       return new Decimal(latestBatch.costPerUnit);
     }
 
-    throw new NotFoundException(`No cost information found for product "${productId}"`);
+    throw new NotFoundException(
+      `No cost information found for product "${productId}"`,
+    );
   }
 
   async calculateAverageCost(productId: string): Promise<string> {

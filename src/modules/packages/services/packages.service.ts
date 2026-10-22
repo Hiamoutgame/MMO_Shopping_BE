@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { Package } from '../entities/package.entity';
@@ -60,7 +65,9 @@ export class PackagesService {
       });
 
       if (existing) {
-        throw new BadRequestException(`Package with slug "${dto.slug}" already exists`);
+        throw new BadRequestException(
+          `Package with slug "${dto.slug}" already exists`,
+        );
       }
 
       const displayPrice = new Decimal(dto.displayPrice);
@@ -79,14 +86,16 @@ export class PackagesService {
       }
 
       if (!dto.applicableRoles || dto.applicableRoles.length === 0) {
-        throw new BadRequestException('At least one applicable role is required');
+        throw new BadRequestException(
+          'At least one applicable role is required',
+        );
       }
 
       if (dto.products.length === 0) {
         throw new BadRequestException('At least one product is required');
       }
 
-      const productIds = dto.products.map(p => p.productId);
+      const productIds = dto.products.map((p) => p.productId);
       const products = await manager.find(Product, {
         where: { id: In(productIds) },
       });
@@ -144,20 +153,17 @@ export class PackagesService {
       .where('package.isActive = :isActive', { isActive: true });
 
     const now = new Date();
-    query.andWhere(
-      '(package.startDate IS NULL OR package.startDate <= :now)',
-      { now },
-    );
-    query.andWhere(
-      '(package.endDate IS NULL OR package.endDate >= :now)',
-      { now },
-    );
+    query.andWhere('(package.startDate IS NULL OR package.startDate <= :now)', {
+      now,
+    });
+    query.andWhere('(package.endDate IS NULL OR package.endDate >= :now)', {
+      now,
+    });
 
     if (roleCode) {
-      query.andWhere(
-        'package.applicableRoles @> :roles',
-        { roles: JSON.stringify([roleCode]) },
-      );
+      query.andWhere('package.applicableRoles @> :roles', {
+        roles: JSON.stringify([roleCode]),
+      });
     }
 
     return query.orderBy('package.sortOrder', 'ASC').getMany();
@@ -235,7 +241,7 @@ export class PackagesService {
         throw new BadRequestException('At least one product is required');
       }
 
-      const productIds = products.map(p => p.productId);
+      const productIds = products.map((p) => p.productId);
       const foundProducts = await manager.find(Product, {
         where: { id: In(productIds) },
       });

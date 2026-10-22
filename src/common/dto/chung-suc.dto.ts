@@ -1,5 +1,17 @@
-import { IsString, IsEmail, IsNotEmpty, MinLength, IsOptional, IsNumber, IsEnum, IsBoolean, IsArray, IsUUID, Min, Max, IsDateString } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsNotEmpty,
+  MinLength,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsBoolean,
+  IsArray,
+  IsUUID,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
 
 // ========== Season DTOs ==========
 export class CreateSeasonDto {
@@ -57,8 +69,8 @@ export class CalculatePriceDto {
   productId!: string;
 
   @IsUUID()
-  @IsNotEmpty()
-  accountId!: string;
+  @IsOptional()
+  accountId?: string;
 
   @IsNumber()
   @Min(1)
@@ -71,10 +83,6 @@ export class CalculatePriceDto {
   @IsUUID()
   @IsOptional()
   packageId?: string;
-
-  @IsString()
-  @IsOptional()
-  sellerCode?: string;
 
   @IsString()
   @IsOptional()
@@ -117,7 +125,13 @@ export class CreatePriceRuleDto {
   @IsOptional()
   description?: string;
 
-  @IsEnum(['SEASONAL', 'ROLE_BASED', 'QUANTITY_BASED', 'PACKAGE', 'PROMOTIONAL'])
+  @IsEnum([
+    'SEASONAL',
+    'ROLE_BASED',
+    'QUANTITY_BASED',
+    'PACKAGE',
+    'PROMOTIONAL',
+  ])
   @IsNotEmpty()
   ruleType!: string;
 

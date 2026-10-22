@@ -1,5 +1,7 @@
 # Triển khai Giai đoạn 1: Hạ tầng TypeORM & Config
 
+> **Kế hoạch hạ tầng cũ:** Nội dung dưới đây được giữ để tra cứu, không phải danh sách việc cần làm lại hoặc yêu cầu xác nhận hiện tại. Kế hoạch nghiệp vụ/API/BE/FE và chuyển dữ liệu mới ngày 23/10/2026 ở [plan shop một chủ](../docs/plan/single-owner-shop.md); xem [mục lục tài liệu](../docs/README.md).
+
 Khởi tạo cấu trúc dự án và cài đặt cấu hình cơ sở dữ liệu PostgreSQL qua TypeORM. Đảm bảo validate biến môi trường chuẩn xác.
 
 ## User Review Required

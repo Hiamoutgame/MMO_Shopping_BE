@@ -986,25 +986,59 @@ export class AddChungSucSystem1788600000000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop foreign keys first
-    await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_package"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_campaign"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_season"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_seller"`);
-    await queryRunner.query(`ALTER TABLE "products" DROP CONSTRAINT IF EXISTS "FK_products_season"`);
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_package"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_campaign"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_season"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP CONSTRAINT IF EXISTS "FK_orders_seller"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "products" DROP CONSTRAINT IF EXISTS "FK_products_season"`,
+    );
 
     // Drop added columns from existing tables
-    await queryRunner.query(`ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "current_usage"`);
-    await queryRunner.query(`ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "usage_per_user"`);
-    await queryRunner.query(`ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "priority"`);
-    await queryRunner.query(`ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "stackable"`);
-    await queryRunner.query(`ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "applicable_roles"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP COLUMN IF EXISTS "package_id"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP COLUMN IF EXISTS "campaign_id"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP COLUMN IF EXISTS "season_id"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP COLUMN IF EXISTS "seller_code"`);
-    await queryRunner.query(`ALTER TABLE "orders" DROP COLUMN IF EXISTS "seller_id"`);
-    await queryRunner.query(`ALTER TABLE "products" DROP COLUMN IF EXISTS "minimum_selling_price"`);
-    await queryRunner.query(`ALTER TABLE "products" DROP COLUMN IF EXISTS "season_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "current_usage"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "usage_per_user"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "priority"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "stackable"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "vouchers" DROP COLUMN IF EXISTS "applicable_roles"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP COLUMN IF EXISTS "package_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP COLUMN IF EXISTS "campaign_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP COLUMN IF EXISTS "season_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP COLUMN IF EXISTS "seller_code"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "orders" DROP COLUMN IF EXISTS "seller_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "products" DROP COLUMN IF EXISTS "minimum_selling_price"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "products" DROP COLUMN IF EXISTS "season_id"`,
+    );
 
     // Drop all new tables
     await queryRunner.query(`DROP TABLE IF EXISTS "coupon_packages"`);
@@ -1029,7 +1063,9 @@ export class AddChungSucSystem1788600000000 implements MigrationInterface {
 
     // Drop enums
     await queryRunner.query(`DROP TYPE IF EXISTS "test_campaign_status_enum"`);
-    await queryRunner.query(`DROP TYPE IF EXISTS "seller_approval_status_enum"`);
+    await queryRunner.query(
+      `DROP TYPE IF EXISTS "seller_approval_status_enum"`,
+    );
     await queryRunner.query(`DROP TYPE IF EXISTS "discount_type_enum"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "price_rule_type_enum"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "campaign_status_enum"`);

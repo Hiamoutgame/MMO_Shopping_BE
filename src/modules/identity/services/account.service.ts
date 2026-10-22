@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -14,6 +15,7 @@ import { UpdateAccountDto } from '../dto/update-account.dto';
 import { Account } from '../entities/account.entity';
 import { Role } from '../entities/role.entity';
 import { AccountStatus } from '../enums/account-status.enum';
+import { ACTIVE_ROLE_CODES } from '../../../common/auth/account-role';
 
 @Injectable()
 export class AccountService {
@@ -42,7 +44,14 @@ export class AccountService {
     }
 
     if (query.role) {
-      qb.andWhere('LOWER(role.code) = LOWER(:role)', { role: query.role });
+      if (query.role.toUpperCase() === 'USER') {
+        // Legacy roles have customer permissions until explicitly reassigned.
+        qb.andWhere("COALESCE(role.code, 'USER') <> :adminRole", {
+          adminRole: 'ADMIN',
+        });
+      } else {
+        qb.andWhere('role.code = :role', { role: query.role.toUpperCase() });
+      }
     }
 
     if (query.status) {
@@ -115,6 +124,7 @@ export class AccountService {
   }
 
   async create(dto: CreateAccountDto) {
+    const role = await this.resolveAssignableRole(dto.roleCode);
     const existing = await this.accountRepository.findOne({
       where: { email: dto.email.toLowerCase() },
       withDeleted: true,
@@ -127,18 +137,6 @@ export class AccountService {
         message: 'Email đã tồn tại.',
         errorCode: 'EMAIL_ALREADY_EXISTS',
       });
-    }
-
-    let role = await this.roleRepository.findOne({
-      where: { code: dto.roleCode.toUpperCase() },
-    });
-
-    if (!role) {
-      role = this.roleRepository.create({
-        code: dto.roleCode.toUpperCase(),
-        name: dto.roleCode.toUpperCase(),
-      });
-      role = await this.roleRepository.save(role);
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -184,6 +182,10 @@ export class AccountService {
   }
 
   async update(id: string, dto: UpdateAccountDto) {
+    const role =
+      dto.roleCode !== undefined
+        ? await this.resolveAssignableRole(dto.roleCode)
+        : null;
     const account = await this.accountRepository.findOne({
       where: { id },
       relations: { role: true },
@@ -230,17 +232,7 @@ export class AccountService {
       account.status = dto.status;
     }
 
-    if (dto.roleCode) {
-      let role = await this.roleRepository.findOne({
-        where: { code: dto.roleCode.toUpperCase() },
-      });
-      if (!role) {
-        role = this.roleRepository.create({
-          code: dto.roleCode.toUpperCase(),
-          name: dto.roleCode.toUpperCase(),
-        });
-        role = await this.roleRepository.save(role);
-      }
+    if (role) {
       account.roleId = role.id;
     }
 
@@ -249,6 +241,28 @@ export class AccountService {
     return {
       id: account.id,
     };
+  }
+
+  private async resolveAssignableRole(roleCode: string): Promise<Role> {
+    const code = roleCode.toUpperCase();
+    if (!ACTIVE_ROLE_CODES.some((activeCode) => activeCode === code)) {
+      throw new BadRequestException({
+        success: false,
+        data: null,
+        message: 'Chỉ hỗ trợ vai trò USER hoặc ADMIN.',
+        errorCode: 'VALIDATION_ERROR',
+      });
+    }
+    const role = await this.roleRepository.findOne({ where: { code } });
+    if (!role) {
+      throw new BadRequestException({
+        success: false,
+        data: null,
+        message: 'Vai trò chưa được khởi tạo. Hãy chạy seed:roles.',
+        errorCode: 'VALIDATION_ERROR',
+      });
+    }
+    return role;
   }
 
   async softDelete(id: string) {

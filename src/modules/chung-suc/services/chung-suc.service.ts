@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { CryptoService } from '../../../common/crypto/crypto.service';
 import { formatMoney, money } from '../../../common/utils/money';
 import { ChungSucCampaign } from '../entities/chung-suc-campaign.entity';
@@ -20,12 +20,35 @@ import {
   ParticipantStatus,
 } from '../enums/participant-status.enum';
 import {
+  EVENT_VARIANT_PRESETS,
+  EventRules,
+  EventVariant,
+  EventVariantPreset,
+} from '../enums/event-variant.enum';
+import {
   CreateCampaignDto,
+  EventRulesDto,
   JoinCampaignDto,
   UpdateCampaignDto,
 } from '../dto/campaign.dto';
 
 type LifecycleAction = 'activate' | 'pause' | 'end' | 'close';
+
+// Yêu cầu đã hủy hoặc thất bại không chiếm lượt của mã mời.
+const NOT_COUNTED_STATUSES = [
+  ParticipantStatus.CANCELLED,
+  ParticipantStatus.FAILED,
+];
+
+// Giờ Việt Nam cố định UTC+7 (không có giờ mùa hè).
+const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+// 00:00 hôm nay theo giờ Việt Nam, trả về dạng UTC.
+export function startOfVietnamDay(now: Date): Date {
+  const shifted = new Date(now.getTime() + VN_OFFSET_MS);
+  shifted.setUTCHours(0, 0, 0, 0);
+  return new Date(shifted.getTime() - VN_OFFSET_MS);
+}
 
 // Trạng thái được phép thực hiện từng action. COMPLETED và CLOSED không quay lại được.
 const ALLOWED_FROM: Record<LifecycleAction, CampaignStatus[]> = {
@@ -112,7 +135,17 @@ export class ChungSucService {
       );
     }
 
+    const variant = dto.variant ?? EventVariant.CUSTOM;
+    const rules = this.mergeRules(EVENT_VARIANT_PRESETS[variant], dto);
+    this.assertRulesConsistent(rules);
+    if (dto.eventCode) {
+      await this.assertEventCodeFree(dto.eventCode);
+    }
+
     const campaign = this.campaignRepo.create({
+      ...rules,
+      eventCode: dto.eventCode ?? null,
+      variant,
       seasonId: dto.seasonId,
       productId: dto.productId,
       name: dto.name,
@@ -203,6 +236,17 @@ export class ChungSucService {
     campaign.startTime = startTime;
     campaign.endTime = endTime;
 
+    // Đổi biến thể không tự áp preset: admin có thể đã chỉnh luật riêng.
+    if (dto.variant !== undefined) campaign.variant = dto.variant;
+    Object.assign(campaign, this.mergeRules(campaign, dto));
+    this.assertRulesConsistent(campaign);
+    if (dto.eventCode !== undefined && dto.eventCode !== campaign.eventCode) {
+      if (dto.eventCode) {
+        await this.assertEventCodeFree(dto.eventCode, campaign.id);
+      }
+      campaign.eventCode = dto.eventCode;
+    }
+
     return this.campaignRepo.save(campaign);
   }
 
@@ -242,6 +286,7 @@ export class ChungSucService {
 
     const codeHash = this.cryptoService.hashLookup(dto.inviteCode);
     await this.assertCodeNotOpen(campaignId, codeHash);
+    await this.assertOwnerLimits(campaign, codeHash, dto.quantity, now);
 
     const price = await this.priceEngine.calculatePrice({
       productId: campaign.productId,
@@ -372,6 +417,136 @@ export class ChungSucService {
       participantCount,
       totalQuantity: totalQuantity ?? 0,
     };
+  }
+
+  getVariantPresets(): EventVariantPreset[] {
+    return Object.values(EVENT_VARIANT_PRESETS);
+  }
+
+  // Một click bật/tắt: đang chạy (hoặc sắp chạy) thì tạm dừng, ngược lại kích hoạt.
+  async toggleCampaign(id: string): Promise<ChungSucCampaign> {
+    const campaign = await this.findById(id);
+    const running = [CampaignStatus.ACTIVE, CampaignStatus.UPCOMING];
+    return running.includes(campaign.status)
+      ? this.pauseCampaign(id)
+      : this.activateCampaign(id);
+  }
+
+  // Lấy giá trị trong dto nếu có gửi lên (kể cả null), không thì giữ base.
+  private mergeRules(base: EventRules, dto: EventRulesDto): EventRules {
+    const pick = <K extends keyof EventRules>(field: K): EventRules[K] =>
+      dto[field] !== undefined ? (dto[field] as EventRules[K]) : base[field];
+    return {
+      helperLimitPerDay: pick('helperLimitPerDay'),
+      helperLimitTotal: pick('helperLimitTotal'),
+      ownerLimitPerDay: pick('ownerLimitPerDay'),
+      ownerLimitTotal: pick('ownerLimitTotal'),
+      pointsCap: pick('pointsCap'),
+      // Cột NOT NULL: null cũng coi như không gửi.
+      dailyReset: dto.dailyReset ?? base.dailyReset,
+    };
+  }
+
+  private assertRulesConsistent(rules: EventRules): void {
+    const invalid = (message: string, errorCode: string) =>
+      new BadRequestException({
+        success: false,
+        data: null,
+        message,
+        errorCode,
+      });
+
+    if (
+      !rules.dailyReset &&
+      (rules.helperLimitPerDay !== null || rules.ownerLimitPerDay !== null)
+    ) {
+      throw invalid(
+        'Giới hạn theo ngày chỉ dùng được khi bật reset hằng ngày.',
+        'EVENT_RULES_DAILY_LIMIT_WITHOUT_RESET',
+      );
+    }
+    if (
+      rules.helperLimitPerDay !== null &&
+      rules.helperLimitTotal !== null &&
+      rules.helperLimitPerDay > rules.helperLimitTotal
+    ) {
+      throw invalid(
+        'Giới hạn theo ngày của tài khoản hỗ trợ không được lớn hơn giới hạn toàn sự kiện.',
+        'EVENT_RULES_HELPER_LIMIT_INVALID',
+      );
+    }
+    if (
+      rules.ownerLimitPerDay !== null &&
+      rules.ownerLimitTotal !== null &&
+      rules.ownerLimitPerDay > rules.ownerLimitTotal
+    ) {
+      throw invalid(
+        'Giới hạn theo ngày của mã mời không được lớn hơn giới hạn toàn sự kiện.',
+        'EVENT_RULES_OWNER_LIMIT_INVALID',
+      );
+    }
+  }
+
+  private async assertEventCodeFree(
+    eventCode: string,
+    exceptId?: string,
+  ): Promise<void> {
+    const existing = await this.campaignRepo.findOne({
+      where: { eventCode },
+      withDeleted: true,
+    });
+    if (existing && existing.id !== exceptId) {
+      throw new ConflictException({
+        success: false,
+        data: null,
+        message: `Mã sự kiện "${eventCode}" đã được dùng.`,
+        errorCode: 'EVENT_CODE_ALREADY_EXISTS',
+      });
+    }
+  }
+
+  // Chặn khi mã mời đã nhận đủ lượt theo luật của sự kiện.
+  private async assertOwnerLimits(
+    campaign: ChungSucCampaign,
+    codeHash: string,
+    quantity: number,
+    now: Date,
+  ): Promise<void> {
+    const counted = {
+      campaignId: campaign.id,
+      codeHash,
+      status: Not(In(NOT_COUNTED_STATUSES)),
+    };
+    const checks: Array<{ limit: number | null; since?: Date; scope: string }> =
+      [
+        { limit: campaign.ownerLimitTotal, scope: 'trong sự kiện' },
+        {
+          limit: campaign.dailyReset ? campaign.ownerLimitPerDay : null,
+          since: startOfVietnamDay(now),
+          scope: 'hôm nay',
+        },
+      ];
+
+    for (const { limit, since, scope } of checks) {
+      if (limit === null) continue;
+      const used =
+        (await this.participantRepo.sum('quantity', {
+          ...counted,
+          ...(since ? { joinedAt: MoreThanOrEqual(since) } : {}),
+        })) ?? 0;
+      if (used + quantity > limit) {
+        const remaining = Math.max(limit - used, 0);
+        throw new BadRequestException({
+          success: false,
+          data: null,
+          message:
+            remaining > 0
+              ? `Mã mời này chỉ còn nhận được ${remaining} lượt ${scope}.`
+              : `Mã mời này đã nhận đủ ${limit} lượt ${scope}.`,
+          errorCode: 'INVITE_CODE_LIMIT_REACHED',
+        });
+      }
+    }
   }
 
   private async assertCodeNotOpen(

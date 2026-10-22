@@ -51,6 +51,12 @@ export class ChungSucController {
     return createApiResponse(campaigns);
   }
 
+  @Get('variants')
+  @ApiOperation({ summary: 'Preset luật của các biến thể sự kiện' })
+  getVariantPresets() {
+    return createApiResponse(this.chungSucService.getVariantPresets());
+  }
+
   @Get('by-slug/:slug')
   @ApiOperation({ summary: 'Chi tiết campaign theo slug' })
   async findCampaignBySlug(@Param('slug') slug: string) {
@@ -143,6 +149,16 @@ export class ChungSucController {
   @ApiOperation({ summary: 'Admin kích hoạt campaign' })
   async activateCampaign(@Param('id', ParseUUIDPipe) id: string) {
     const campaign = await this.chungSucService.activateCampaign(id);
+    return createApiResponse(campaign);
+  }
+
+  @Post(':id/toggle')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin bật/tắt campaign bằng một click' })
+  async toggleCampaign(@Param('id', ParseUUIDPipe) id: string) {
+    const campaign = await this.chungSucService.toggleCampaign(id);
     return createApiResponse(campaign);
   }
 

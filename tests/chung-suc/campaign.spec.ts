@@ -239,20 +239,16 @@ test.describe('G. Campaign administration', () => {
     expect(result.status).toBe(401);
   });
 
-  test('BUG-002: USER and SELLER cannot create a campaign', async ({
-    admin,
-    seller,
-    userA,
-  }) => {
+  // Role SELLER đã ngừng (docs/changes/seller-role-disabled-2026-10-23.md):
+  // không tạo được account SELLER mới, seller cũ có quyền như USER.
+  test('BUG-002: USER cannot create a campaign', async ({ admin, userA }) => {
     const product = await createProduct(admin.api);
-    for (const session of [userA, seller]) {
-      const result = await session.api.post(
-        'v1/campaigns',
-        campaignBody(product.id),
-      );
-      if (result.status < 300) campaignIds.push(unwrap(result.body).id);
-      expect.soft(result.status).toBe(403);
-    }
+    const result = await userA.api.post(
+      'v1/campaigns',
+      campaignBody(product.id),
+    );
+    if (result.status < 300) campaignIds.push(unwrap(result.body).id);
+    expect(result.status).toBe(403);
   });
 
   test('BUG-002: anonymous users cannot update, run or delete a campaign', async ({

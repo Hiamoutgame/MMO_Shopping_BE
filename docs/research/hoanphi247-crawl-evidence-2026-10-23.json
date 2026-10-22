@@ -1,0 +1,144 @@
+{
+  "checkedDateLocal": "2026-10-23",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "scope": "public GET requests only in this crawl attempt",
+  "curl": [
+    {
+      "url": "https://hoanphi247.vn/",
+      "method": "GET",
+      "httpStatus": null,
+      "exitCode": 28,
+      "receivedBodyBytes": 0,
+      "tcpConnectSeconds": 0.106582,
+      "tlsCompleteSeconds": 0.162944,
+      "totalSeconds": 12.00316,
+      "requestTimeoutSeconds": 12,
+      "result": "timeout_before_http_response"
+    },
+    {
+      "url": "https://hoanphi247.vn/api/v1/openapi/config",
+      "method": "GET",
+      "httpStatus": null,
+      "exitCode": 28,
+      "receivedBodyBytes": 0,
+      "tcpConnectSeconds": 0.113361,
+      "tlsCompleteSeconds": 0.173226,
+      "totalSeconds": 12.003158,
+      "requestTimeoutSeconds": 12,
+      "result": "timeout_before_http_response"
+    },
+    {
+      "url": "https://hoanphi247.vn/robots.txt",
+      "method": "GET",
+      "httpStatus": null,
+      "exitCode": 28,
+      "receivedBodyBytes": 0,
+      "tcpConnectSeconds": 0.23765,
+      "tlsCompleteSeconds": 0.327792,
+      "totalSeconds": 12.002299,
+      "requestTimeoutSeconds": 12,
+      "result": "timeout_before_http_response"
+    },
+    {
+      "url": "https://hoanphi247.vn/sitemap.xml",
+      "method": "GET",
+      "httpStatus": null,
+      "exitCode": 28,
+      "receivedBodyBytes": 0,
+      "tcpConnectSeconds": 0.055485,
+      "tlsCompleteSeconds": 0.124196,
+      "totalSeconds": 12.002331,
+      "requestTimeoutSeconds": 12,
+      "result": "timeout_before_http_response"
+    }
+  ],
+  "browser": {
+    "engine": "Chromium via Playwright",
+    "mode": "headless",
+    "results": [
+      {
+        "url": "https://hoanphi247.vn/",
+        "httpStatus": null,
+        "elapsedMs": 18005,
+        "error": "TimeoutError",
+        "detail": "page.goto: Timeout 18000ms exceeded."
+      },
+      {
+        "url": "https://hoanphi247.vn/api/v1/openapi/config",
+        "httpStatus": null,
+        "elapsedMs": 18024,
+        "error": "TimeoutError",
+        "detail": "page.goto: Timeout 18000ms exceeded."
+      },
+      {
+        "url": "https://hoanphi247.vn/api/v1/openapi/pages",
+        "httpStatus": null,
+        "elapsedMs": 18018,
+        "error": "TimeoutError",
+        "detail": "page.goto: Timeout 18000ms exceeded."
+      }
+    ]
+  },
+  "webTool": {
+    "result": "no_target_page_content_available",
+    "attemptedPublicUrls": [
+      "https://hoanphi247.vn/",
+      "https://hoanphi247.vn/api/v1/openapi/config",
+      "https://www.hoanphi247.vn/",
+      "http://hoanphi247.vn/",
+      "https://r.jina.ai/https://hoanphi247.vn/"
+    ]
+  },
+  "conclusion": "No live HTML or JSON content was retrieved. The cause is undetermined; this does not prove the website is unavailable to all users.",
+  "userReportedAccess": {
+    "source": "user reply in conversation",
+    "homepageOpensNormally": true,
+    "independentlyVerified": false
+  },
+  "additionalChecks": [
+    {
+      "url": "https://hoanphi247.vn/",
+      "resolvedAddress": "104.21.42.214",
+      "httpStatus": null,
+      "exitCode": 28,
+      "totalSeconds": 8.002328,
+      "receivedBodyBytes": 0
+    },
+    {
+      "url": "https://hoanphi247.vn/",
+      "resolvedAddress": "172.67.166.151",
+      "httpStatus": null,
+      "exitCode": 28,
+      "totalSeconds": 8.002229,
+      "receivedBodyBytes": 0
+    },
+    {
+      "url": "https://www.hoanphi247.vn/",
+      "httpStatus": null,
+      "exitCode": 28,
+      "totalSeconds": 8.002242,
+      "receivedBodyBytes": 0
+    },
+    {
+      "url": "http://hoanphi247.vn/",
+      "httpStatus": null,
+      "exitCode": 28,
+      "totalSeconds": 8.002144,
+      "receivedBodyBytes": 0
+    },
+    {
+      "url": "https://r.jina.ai/http://hoanphi247.vn/",
+      "httpStatus": null,
+      "exitCode": 28,
+      "timeoutSeconds": 20,
+      "receivedBodyBytes": 0
+    },
+    {
+      "url": "https://r.jina.ai/https://hoanphi247.vn/",
+      "httpStatus": null,
+      "exitCode": 28,
+      "timeoutSeconds": 20,
+      "receivedBodyBytes": 0
+    }
+  ]
+}

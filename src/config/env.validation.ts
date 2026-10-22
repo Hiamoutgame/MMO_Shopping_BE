@@ -2,9 +2,12 @@ import { plainToInstance, Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
+  Min,
   ValidateIf,
   validateSync,
 } from 'class-validator';
@@ -93,6 +96,55 @@ export class EnvironmentVariables {
 
   @IsString()
   INTEGRATION_ENCRYPTION_KEY!: string;
+
+  // --- SePay (tuỳ chọn; thiếu thì tính năng nạp SePay tắt) ---
+  @IsOptional()
+  @IsString()
+  SEPAY_WEBHOOK_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  SEPAY_API_TOKEN?: string;
+
+  @IsOptional()
+  @IsString()
+  SEPAY_API_BASE_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  SEPAY_BANK_CODE?: string;
+
+  @IsOptional()
+  @IsString()
+  SEPAY_ACCOUNT_NUMBER?: string;
+
+  @IsOptional()
+  @IsString()
+  SEPAY_ACCOUNT_HOLDER?: string;
+
+  @IsOptional()
+  @Matches(/^[A-Za-z]{2,5}$/)
+  SEPAY_PAYMENT_PREFIX?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  SEPAY_MIN_DEPOSIT_AMOUNT?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  SEPAY_DEPOSIT_EXPIRES_MINUTES?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  SEPAY_RECONCILE_INTERVAL_SECONDS?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  SEPAY_RECONCILE_LOOKBACK_HOURS?: number;
 }
 
 export function validate(config: Record<string, unknown>) {

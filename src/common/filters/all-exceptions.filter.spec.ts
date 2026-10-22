@@ -26,7 +26,7 @@ function run(exception: unknown) {
 
   return {
     status: (status.mock.calls[0] as unknown[])[0],
-    body: (json.mock.calls[0] as unknown[])[0],
+    body: (json.mock.calls[0] as unknown[])[0] as Record<string, unknown>,
   };
 }
 

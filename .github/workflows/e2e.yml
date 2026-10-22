@@ -54,6 +54,13 @@ jobs:
       SWAGGER_TITLE: MMO Shopping API
       SWAGGER_DESCRIPTION: MMO Shopping Backend API
       SWAGGER_VERSION: 1.0.0
+      # SePay giả: tests/commerce/sepay-deposit.spec.ts tự dựng API SePay ở cổng 4599.
+      SEPAY_WEBHOOK_API_KEY: ci-only-sepay-webhook-key
+      SEPAY_API_TOKEN: ci-only-sepay-api-token
+      SEPAY_API_BASE_URL: http://127.0.0.1:4599/userapi
+      SEPAY_BANK_CODE: MBBank
+      SEPAY_ACCOUNT_NUMBER: '0000000000'
+      SEPAY_ACCOUNT_HOLDER: MMO SHOPPING TEST
     steps:
       - name: Checkout
         uses: actions/checkout@v4

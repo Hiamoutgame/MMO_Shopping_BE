@@ -73,6 +73,11 @@ export class PaymentTransaction extends AuditableEntity {
   @Column({ type: 'jsonb', nullable: true })
   metadata?: Record<string, any> | null;
 
+  // Lệnh nạp SePay hết hạn hiển thị cho khách sau thời điểm này. Tiền đến
+  // trễ nhưng đúng mã vẫn được cộng.
+  @Column({ name: 'expires_at', type: 'timestamptz', nullable: true })
+  expiresAt?: Date | null;
+
   @Column({ name: 'completed_at', type: 'timestamptz', nullable: true })
   completedAt?: Date | null;
 }

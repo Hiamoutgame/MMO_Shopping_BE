@@ -66,6 +66,14 @@ export class FinanceService {
         'Deposit amount must be greater than zero.',
       );
     }
+    if (dto.provider === PaymentProvider.SEPAY) {
+      throw new BadRequestException({
+        success: false,
+        data: null,
+        message: 'Use POST /v1/wallet/sepay-deposits for SePay deposits.',
+        errorCode: 'USE_SEPAY_DEPOSIT_ENDPOINT',
+      });
+    }
 
     return this.dataSource.transaction(async (manager) => {
       const requestHash = this.idempotencyService.hash(dto);
@@ -117,6 +125,16 @@ export class FinanceService {
     timestamp?: string,
     signature?: string,
   ) {
+    // Tiền SePay chỉ được cộng qua webhook SePay (xác thực bằng API key và
+    // đối chiếu giao dịch ngân hàng), không qua callback HMAC giả lập.
+    if (provider === PaymentProvider.SEPAY) {
+      throw new BadRequestException({
+        success: false,
+        data: null,
+        message: 'SePay deposits are confirmed by the SePay webhook only.',
+        errorCode: 'USE_SEPAY_WEBHOOK',
+      });
+    }
     if (!this.cryptoService.verifyHmac(rawBody, timestamp, signature)) {
       throw new UnauthorizedException({
         success: false,
@@ -343,6 +361,14 @@ export class FinanceService {
     }
 
     const wallet = await this.ensureWallet(input.accountId, manager, true);
+    // Kiểm tra lại sau khi giữ khoá ví: request song song cùng key đã chờ
+    // khoá này thì thấy bút toán của request trước và không cộng/trừ lần nữa.
+    const committed = await manager.findOne(WalletTransaction, {
+      where: { idempotencyKey: input.idempotencyKey },
+    });
+    if (committed) {
+      return committed;
+    }
     if (wallet.currency !== input.currency.toUpperCase()) {
       throw new BadRequestException('Wallet currency mismatch.');
     }
@@ -381,7 +407,43 @@ export class FinanceService {
     );
   }
 
-  private async ensureWallet(
+  /**
+   * Đối chiếu số dư ví với sổ cái: số dư phải bằng tổng CREDIT trừ tổng
+   * DEBIT đã hoàn tất. Không phụ thuộc thứ tự bút toán nên không báo nhầm.
+   * Danh sách rỗng nghĩa là toàn bộ ví khớp.
+   */
+  async auditWallets() {
+    const rows: {
+      wallet_id: string;
+      account_id: string;
+      balance: string;
+      ledger_balance: string;
+      entries: string;
+    }[] = await this.dataSource.query(`
+      SELECT
+        w.id AS wallet_id,
+        w.account_id,
+        w.balance::text AS balance,
+        COALESCE(SUM(CASE WHEN t.type = 'CREDIT' THEN t.amount ELSE -t.amount END), 0)::text AS ledger_balance,
+        COUNT(t.id)::text AS entries
+      FROM wallets w
+      LEFT JOIN wallet_transactions t
+        ON t.wallet_id = w.id AND t.status = 'COMPLETED'
+      GROUP BY w.id
+    `);
+    const mismatched = rows
+      .filter((row) => !money(row.balance).eq(money(row.ledger_balance)))
+      .map((row) => ({
+        walletId: row.wallet_id,
+        accountId: row.account_id,
+        balance: row.balance,
+        ledgerBalance: row.ledger_balance,
+        entries: Number(row.entries),
+      }));
+    return { checkedWallets: rows.length, mismatched };
+  }
+
+  async ensureWallet(
     accountId: string,
     manager?: EntityManager,
     lock = false,

@@ -67,7 +67,7 @@ flowchart LR
 | US-CS-ADM-01 | Là chủ shop, tôi muốn tạo campaign cho một sự kiện game để công bố dịch vụ | Product tồn tại, slug chưa trùng, bắt đầu trước kết thúc, giới hạn mỗi mã là số nguyên dương; tạo DRAFT | Có BE + FE; `CreateCampaignDto`, `createCampaign`, `AdminChungSucPage` |
 | US-CS-ADM-02 | Là chủ shop, tôi muốn sửa mô tả, giới hạn và thời gian để điều chỉnh việc nhận mã | Chỉ sửa các field cho phép; thời gian vẫn hợp lệ; không đổi product/season/slug/status bằng PATCH; không tự sửa giá/số lượng đã lưu ở yêu cầu cũ | Có BE + FE; `UpdateCampaignDto`, `updateCampaign` |
 | US-CS-ADM-03 | Là chủ shop, tôi muốn kích hoạt, tạm dừng, kết thúc hoặc đóng campaign để kiểm soát việc nhận mã | Chỉ ADMIN; thao tác tuân thủ bảng chuyển trạng thái ở mục 6; khách không gửi mới khi campaign không ACTIVE hoặc ngoài thời gian | Có BE + FE; các phương thức lifecycle và `LIFECYCLE_ACTIONS` trong AdminChungSucPage |
-| US-CS-ADM-04 | Là chủ shop, tôi muốn xem yêu cầu trong campaign để theo dõi người gửi và số lượng | API chỉ dành ADMIN; trả thông tin account cần thiết và mã đã che, không trả password/hash/bản mã mời đầy đủ | Có API backend; `getCampaignParticipants`. Chưa thấy màn hình quản lý từng yêu cầu trong AdminChungSucPage hiện tại |
+| US-CS-ADM-04 | Là chủ shop, tôi muốn xem yêu cầu trong campaign và cập nhật tiến độ xử lý | API chỉ dành ADMIN; trả thông tin account cần thiết và mã đã che, không trả password/hash/bản mã mời đầy đủ. Đổi trạng thái theo BR-CS-16; mỗi lần đổi lưu người đổi, thời điểm, ghi chú | Có BE + FE; `getCampaignParticipants`, `updateRequestStatus` (`PATCH /v1/campaigns/requests/:requestId/status`); [AdminChungSucRequestsModal](../../MMO_Shopping_FE/src/pages/admin/AdminChungSucRequestsModal.tsx). Test: `tests/chung-suc/campaign.spec.ts`, mục “Admin processing requests” |
 
 Nguồn giá: [PriceEngineService](../../MMO_Shopping_BE/src/modules/pricing/services/price-engine.service.ts), `calculatePrice`. Giá hiện dùng chính sách USER cho mọi account mua, gồm admin và seller cũ, theo [đợt tạm ngừng seller](../changes/seller-role-disabled-2026-10-23.md).
 
@@ -100,6 +100,7 @@ Các story NEXT là bản phân rã công việc để thảo luận, chưa ph�
 | BR-CS-12 | Chỉ hủy khi còn PENDING, dùng cập nhật có điều kiện để không hủy đè lên trạng thái vừa đổi. Sau hủy giữ lịch sử; mã không còn bị chặn bởi yêu cầu đã hủy | `cancelRequest`, `assertCodeNotOpen`, partial unique index |
 | BR-CS-13 | Mã lưu mã hóa; dùng hash có khóa để tra trùng. API chỉ trả mã đã che, không trả mã gốc/hash/bản mã hóa. Hiện không tự đổi chữ hoa/thường của mã | `CryptoService.hashLookup`, `encryptJson`; `JoinCampaignDto`; `toParticipantView` |
 | BR-CS-14 | Thống kê hiện là số yêu cầu và tổng số tài khoản được yêu cầu, loại các yêu cầu CANCELLED. Đây chưa phải số tài khoản đã xử lý thành công và không phải số khách duy nhất | `getCampaignProgress`: `count`, `sum('quantity')`, điều kiện khác CANCELLED |
+| BR-CS-16 | Admin chuyển trạng thái yêu cầu thủ công theo luồng PENDING → CHECKING/PROCESSING/FAILED, CHECKING → PROCESSING/FAILED, PROCESSING → SUCCESS/PARTIAL_SUCCESS/FAILED. SUCCESS/PARTIAL_SUCCESS/FAILED/CANCELLED là trạng thái cuối; chuyển sai luồng trả 409 `REQUEST_STATUS_TRANSITION_NOT_ALLOWED`. Cập nhật có điều kiện nên không ghi đè khi khách vừa hủy. Đổi trạng thái chưa tạo order, chưa trừ/giữ ví (mục 7) | `ADMIN_STATUS_TRANSITIONS`, `updateRequestStatus`, `metadata.statusHistory` |
 | BR-CS-15 | completionConditions/rewards hiện là dữ liệu cấu hình; UI có thể hiển thị rewards nhưng chưa có cơ chế chứng minh đã nhận thưởng trong game | `createCampaign`, `updateCampaign`; `ChungSucCampaignsPage` |
 
 Nguồn bổ sung: [ParticipantStatus](../../MMO_Shopping_BE/src/modules/chung-suc/enums/participant-status.enum.ts), [migration chống trùng](../../MMO_Shopping_BE/src/database/migrations/1791600000000-ReshapeChungSucForInviteCodes.ts), [CryptoService](../../MMO_Shopping_BE/src/common/crypto/crypto.service.ts). “Hash có khóa” ở đây là dấu tra cứu ổn định dùng để so trùng; “mã hóa” giữ nội dung để backend có thể giải mã khi cần xử lý.
@@ -128,11 +129,11 @@ Nguồn: `ALLOWED_FROM`, `activateCampaign`, `pauseCampaign`, `endCampaign`, `cl
 | --- | --- | --- |
 | PENDING | Shop đã nhận yêu cầu, chờ xử lý | Đang được tạo |
 | CANCELLED | Khách hủy khi còn chờ | Đã có thao tác chuyển |
-| CHECKING | Đang kiểm tra mã/điều kiện game | Có enum/nhãn UI, chưa có workflow chuyển |
-| PROCESSING | Đang thực hiện tiếp sức | Có enum/nhãn UI, chưa có workflow chuyển |
-| SUCCESS | Đã tiếp sức đủ số lượng yêu cầu | Có enum/nhãn UI, cần định nghĩa bằng chứng thành công |
-| PARTIAL_SUCCESS | Chỉ một phần số lượng thành công | Có enum/nhãn UI, chưa có xử lý kết quả/thanh toán |
-| FAILED | Không thực hiện thành công | Có enum/nhãn UI, chưa có xử lý kết quả/thanh toán |
+| CHECKING | Đang kiểm tra mã/điều kiện game | Admin chuyển thủ công (BR-CS-16) |
+| PROCESSING | Đang thực hiện tiếp sức | Admin chuyển thủ công (BR-CS-16) |
+| SUCCESS | Đã tiếp sức đủ số lượng yêu cầu | Admin chuyển thủ công; chưa lưu số lượt thành công, cần định nghĩa bằng chứng thành công |
+| PARTIAL_SUCCESS | Chỉ một phần số lượng thành công | Admin chuyển thủ công, ghi chú số lượt vào note; chưa có xử lý thanh toán |
+| FAILED | Không thực hiện thành công | Admin chuyển thủ công; chưa có xử lý thanh toán. Mã được gửi lại vì không còn yêu cầu mở |
 
 Nguồn: `ParticipantStatus`, `REQUEST_STATUS_LABELS` trong JoinChungSucPage; các hàm ghi trạng thái trong ChungSucService. Có tên trạng thái trong code không đồng nghĩa luồng đó đã hoạt động.
 

@@ -191,15 +191,17 @@ Gửi mã chỉ tạo yêu cầu `PENDING` với đơn giá đã chụp từ pri
 | `POST`   | `/api/v1/campaigns/{id}/close`               | Admin         | Mọi trạng thái trừ `CLOSED` → `CLOSED`                                |
 | `DELETE` | `/api/v1/campaigns/{id}`                     | Admin         | Xóa mềm campaign                                                      |
 | `GET`    | `/api/v1/campaigns/{id}/participants`        | Admin         | Danh sách yêu cầu (account chỉ có `id`, `email`, `name`)              |
+| `PATCH`  | `/api/v1/campaigns/requests/{requestId}/status` | Admin      | Đổi trạng thái yêu cầu theo luồng xử lý, body `{ status, note? }`     |
 
 Quy tắc của `join`:
 
 - `inviteCode` bắt buộc, được trim, tối đa 100 ký tự. `quantity` từ 1 tới `targetQuantity`.
 - Campaign phải `ACTIVE` và đang trong khoảng thời gian chạy; sản phẩm của campaign phải có giá, nếu không trả `400 CAMPAIGN_PRICE_NOT_SET`.
 - Một mã mời chỉ có một yêu cầu đang mở (`PENDING`/`CHECKING`/`PROCESSING`) trong mỗi campaign, bất kể account nào gửi; trùng thì trả `409 INVITE_CODE_ALREADY_PENDING`.
+- Admin đổi trạng thái yêu cầu: `PENDING` → `CHECKING`/`PROCESSING`/`FAILED`; `CHECKING` → `PROCESSING`/`FAILED`; `PROCESSING` → `SUCCESS`/`PARTIAL_SUCCESS`/`FAILED`. Sai luồng, yêu cầu đã hủy hoặc đã đóng trả `409 REQUEST_STATUS_TRANSITION_NOT_ALLOWED`. Mỗi lần đổi được lưu vào `statusHistory` (`from`, `to`, `at`, `by`, `note`). Chưa tạo đơn hay trừ ví.
 - Mã mời lưu dạng hash (để tra trùng) và mã hóa AES-256-GCM. Response chỉ trả `inviteCodeMasked` (4 ký tự cuối).
 
-Trạng thái yêu cầu: `PENDING`, `CHECKING`, `PROCESSING`, `SUCCESS`, `PARTIAL_SUCCESS`, `FAILED`, `CANCELLED`. Hiện chỉ có `PENDING` và `CANCELLED` được dùng; các trạng thái còn lại dành cho bước gọi tool và trừ ví. Hủy một yêu cầu không còn `PENDING` trả `409 REQUEST_NOT_CANCELLABLE`.
+Trạng thái yêu cầu: `PENDING`, `CHECKING`, `PROCESSING`, `SUCCESS`, `PARTIAL_SUCCESS`, `FAILED`, `CANCELLED`. Khách tạo `PENDING` và hủy thành `CANCELLED`; admin chuyển các trạng thái còn lại bằng tay theo luồng ở trên. Bước gọi tool và trừ ví chưa có. Hủy một yêu cầu không còn `PENDING` trả `409 REQUEST_NOT_CANCELLABLE`.
 
 `status`, `productId`, `slug` của campaign không sửa được qua `PATCH`. `COMPLETED` không còn được gán tự động.
 

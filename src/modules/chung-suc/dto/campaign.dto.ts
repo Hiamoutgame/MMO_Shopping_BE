@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsEnum,
   IsISO8601,
   IsInt,
   IsNotEmpty,
@@ -11,6 +12,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { ParticipantStatus } from '../enums/participant-status.enum';
 
 // ValidationPipe toàn cục bật enableImplicitConversion nên "10" sẽ bị ép thành 10
 // trước khi validate. Giữ nguyên giá trị gốc để @IsInt từ chối chuỗi.
@@ -150,4 +152,16 @@ export class JoinCampaignDto {
   @IsOptional()
   @IsUUID()
   accountId?: string;
+}
+
+export class UpdateRequestStatusDto {
+  @ApiProperty({ enum: ParticipantStatus })
+  @IsEnum(ParticipantStatus)
+  status!: ParticipantStatus;
+
+  @ApiPropertyOptional({ description: 'Ghi chú nội bộ của admin' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
 }

@@ -702,3 +702,101 @@ test.describe('G. Participant data', () => {
     expect.soft(otherBody.includes(userA.email), 'other user response leaks participant email').toBe(false);
   });
 });
+
+test.describe('G. Admin processing requests (US-CS-ADM-04)', () => {
+  async function setStatus(
+    client: ApiClient,
+    requestId: string,
+    status: string,
+    note?: string,
+  ) {
+    return client.patch(`v1/campaigns/requests/${requestId}/status`, {
+      status,
+      ...(note ? { note } : {}),
+    });
+  }
+
+  test('admin moves a request through the processing flow and history is kept', async ({
+    admin,
+    userA,
+  }) => {
+    const campaign = await activeCampaign(admin.api);
+    const request = unwrap((await join(userA, campaign.id, 2)).body);
+
+    for (const status of ['CHECKING', 'PROCESSING', 'PARTIAL_SUCCESS']) {
+      const result = await setStatus(admin.api, request.id, status, `to ${status}`);
+      expect(result.status, JSON.stringify(result.body)).toBe(200);
+      expect(unwrap(result.body).status).toBe(status);
+    }
+    expect(await requestStatus(request.id)).toBe('PARTIAL_SUCCESS');
+
+    const listed = unwrap<any[]>(
+      (await admin.api.get(`v1/campaigns/${campaign.id}/participants`)).body,
+    );
+    const history = listed.find((item) => item.id === request.id).statusHistory;
+    expect(history.map((entry: any) => [entry.from, entry.to])).toEqual([
+      ['PENDING', 'CHECKING'],
+      ['CHECKING', 'PROCESSING'],
+      ['PROCESSING', 'PARTIAL_SUCCESS'],
+    ]);
+    expect(history[0]).toMatchObject({ by: admin.accountId, note: 'to CHECKING' });
+
+    // Khách thấy trạng thái mới nhưng mã mời vẫn được che.
+    const mine = unwrap<any[]>((await userA.api.get('v1/campaigns/requests/me')).body);
+    expect(mine.find((item) => item.id === request.id)).toMatchObject({
+      status: 'PARTIAL_SUCCESS',
+      inviteCodeMasked: expect.stringMatching(/^••••/),
+    });
+  });
+
+  test('transitions outside the flow are rejected with 409', async ({
+    admin,
+    userA,
+  }) => {
+    const campaign = await activeCampaign(admin.api);
+    const code = inviteCode();
+    const request = unwrap(
+      (await join(userA, campaign.id, 1, { inviteCode: code })).body,
+    );
+
+    // PENDING không nhảy thẳng sang SUCCESS; CANCELLED là thao tác của khách.
+    for (const status of ['SUCCESS', 'CANCELLED', 'PENDING']) {
+      const result = await setStatus(admin.api, request.id, status);
+      expect(result.status, status).toBe(409);
+      expect(result.body.errorCode).toBe('REQUEST_STATUS_TRANSITION_NOT_ALLOWED');
+    }
+
+    expect((await setStatus(admin.api, request.id, 'FAILED')).status).toBe(200);
+    // FAILED là trạng thái cuối.
+    expect((await setStatus(admin.api, request.id, 'PROCESSING')).status).toBe(409);
+    // Yêu cầu đã đóng thì mã được gửi lại.
+    expect(
+      (await join(userA, campaign.id, 1, { inviteCode: code })).status,
+    ).toBe(201);
+  });
+
+  test('a cancelled request cannot be processed', async ({ admin, userA }) => {
+    const campaign = await activeCampaign(admin.api);
+    const request = unwrap((await join(userA, campaign.id)).body);
+    await userA.api.post(`v1/campaigns/requests/${request.id}/cancel`);
+    expect((await setStatus(admin.api, request.id, 'PROCESSING')).status).toBe(409);
+  });
+
+  test('only ADMIN can change a request status; input is validated', async ({
+    admin,
+    anon,
+    userA,
+  }) => {
+    const campaign = await activeCampaign(admin.api);
+    const request = unwrap((await join(userA, campaign.id)).body);
+
+    expect((await setStatus(anon, request.id, 'PROCESSING')).status).toBe(401);
+    expect((await setStatus(userA.api, request.id, 'PROCESSING')).status).toBe(403);
+    expect((await setStatus(admin.api, request.id, 'DONE')).status).toBe(400);
+    expect(
+      (await setStatus(admin.api, '00000000-0000-0000-0000-000000000000', 'PROCESSING'))
+        .status,
+    ).toBe(404);
+    expect(await requestStatus(request.id)).toBe('PENDING');
+  });
+});

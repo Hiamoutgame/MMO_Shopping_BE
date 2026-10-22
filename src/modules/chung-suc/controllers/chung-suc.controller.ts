@@ -19,6 +19,7 @@ import {
   CreateCampaignDto,
   JoinCampaignDto,
   UpdateCampaignDto,
+  UpdateRequestStatusDto,
 } from '../dto/campaign.dto';
 import { ChungSucService } from '../services/chung-suc.service';
 
@@ -78,6 +79,24 @@ export class ChungSucController {
     const request = await this.chungSucService.cancelRequest(
       requestId,
       accountId,
+    );
+    return createApiResponse(request);
+  }
+
+  @Patch('requests/:requestId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin đổi trạng thái yêu cầu tiếp sức' })
+  async updateRequestStatus(
+    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @Body() dto: UpdateRequestStatusDto,
+    @CurrentUser('subject') adminId: string,
+  ) {
+    const request = await this.chungSucService.updateRequestStatus(
+      requestId,
+      adminId,
+      dto,
     );
     return createApiResponse(request);
   }

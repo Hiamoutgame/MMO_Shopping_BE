@@ -16,6 +16,7 @@ import { Product } from '../../catalog/entities/product.entity';
 import { PriceEngineService } from '../../pricing/services/price-engine.service';
 import { CampaignStatus } from '../enums/campaign-status.enum';
 import {
+  ADMIN_STATUS_TRANSITIONS,
   OPEN_PARTICIPANT_STATUSES,
   ParticipantStatus,
 } from '../enums/participant-status.enum';
@@ -23,6 +24,7 @@ import {
   CreateCampaignDto,
   JoinCampaignDto,
   UpdateCampaignDto,
+  UpdateRequestStatusDto,
 } from '../dto/campaign.dto';
 
 type LifecycleAction = 'activate' | 'pause' | 'end' | 'close';
@@ -59,6 +61,16 @@ export interface ParticipantView {
   currency: string;
   joinedAt: Date;
   cancelledAt: Date | null;
+  statusHistory: StatusHistoryEntry[];
+}
+
+// Lưu trong metadata.statusHistory để biết ai đổi trạng thái, lúc nào.
+export interface StatusHistoryEntry {
+  from: ParticipantStatus;
+  to: ParticipantStatus;
+  at: string;
+  by: string;
+  note?: string;
 }
 
 export interface MyRequestView extends ParticipantView {
@@ -330,6 +342,74 @@ export class ChungSucService {
     return this.toParticipantView(participant);
   }
 
+  async updateRequestStatus(
+    requestId: string,
+    adminId: string,
+    dto: UpdateRequestStatusDto,
+  ): Promise<ParticipantView> {
+    const participant = await this.participantRepo.findOne({
+      where: { id: requestId },
+    });
+    if (!participant) {
+      throw new NotFoundException(`Request with ID "${requestId}" not found`);
+    }
+
+    const allowed = ADMIN_STATUS_TRANSITIONS[participant.status] ?? [];
+    if (!allowed.includes(dto.status)) {
+      throw this.statusNotAllowed(participant.status, dto.status);
+    }
+
+    const entry: StatusHistoryEntry = {
+      from: participant.status,
+      to: dto.status,
+      at: new Date().toISOString(),
+      by: adminId,
+      ...(dto.note ? { note: dto.note } : {}),
+    };
+    const metadata = {
+      ...(participant.metadata ?? {}),
+      statusHistory: [...this.statusHistory(participant), entry],
+    };
+
+    // Cập nhật có điều kiện: nếu khách vừa hủy hoặc admin khác vừa đổi
+    // trạng thái thì không ghi đè.
+    const result = await this.participantRepo.update(
+      { id: requestId, status: participant.status },
+      { status: dto.status, metadata },
+    );
+    if (!result.affected) {
+      const latest = await this.participantRepo.findOneOrFail({
+        where: { id: requestId },
+      });
+      throw this.statusNotAllowed(latest.status, dto.status);
+    }
+
+    return this.toParticipantView({
+      ...participant,
+      status: dto.status,
+      metadata,
+    });
+  }
+
+  private statusNotAllowed(
+    from: ParticipantStatus,
+    to: ParticipantStatus,
+  ): ConflictException {
+    return new ConflictException({
+      success: false,
+      data: null,
+      message: `Không thể chuyển yêu cầu từ ${from} sang ${to}.`,
+      errorCode: 'REQUEST_STATUS_TRANSITION_NOT_ALLOWED',
+    });
+  }
+
+  private statusHistory(
+    participant: ChungSucParticipant,
+  ): StatusHistoryEntry[] {
+    const history: unknown = participant.metadata?.statusHistory;
+    return Array.isArray(history) ? (history as StatusHistoryEntry[]) : [];
+  }
+
   async getCampaignParticipants(
     campaignId: string,
   ): Promise<CampaignParticipantView[]> {
@@ -421,6 +501,7 @@ export class ChungSucService {
       currency: participant.currency,
       joinedAt: participant.joinedAt,
       cancelledAt: participant.cancelledAt ?? null,
+      statusHistory: this.statusHistory(participant),
     };
   }
 

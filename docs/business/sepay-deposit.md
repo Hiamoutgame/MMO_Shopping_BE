@@ -76,4 +76,4 @@ Dự phòng webhook bị lỡ: mỗi 5 phút backend tự gọi SePay API lấy 
 | `SEPAY_AUTO_SYNC_INTERVAL_MS` | Chu kỳ tự sync (0 = tắt) |
 | `DEPOSIT_MIN_AMOUNT`, `DEPOSIT_MAX_AMOUNT`, `DEPOSIT_EXPIRES_MINUTES`, `DEPOSIT_MAX_PENDING` | Giới hạn nạp |
 
-Cấu hình đã đặt trên SePay (23/10/2026): cấu trúc mã thanh toán `MMO` + 10 ký tự chữ/số; webhook #66025 "MMO Shopping - Nap vi" → `https://103-57-222-81.sslip.io/api/v1/payments/sepay/webhook`, chỉ tiền vào, bỏ qua giao dịch không có mã, xác thực Api Key, retry khi không phải 2xx. SePay **không gửi được tới URL `http://`** (trả 403 trước khi tới server), nên bắt buộc dùng HTTPS.
+Cấu hình đã đặt trên SePay (23/10/2026): cấu trúc mã thanh toán `MMO` + 10 ký tự chữ/số; webhook #66025 "MMO Shopping - Nap vi" → `https://chungsuc.site/api/v1/payments/sepay/webhook` (đổi từ sslip.io ngày 23/10/2026; tên miền đi qua proxy vCloud, proxy gọi về VPS bằng HTTP cổng 80), chỉ tiền vào, bỏ qua giao dịch không có mã, xác thực Api Key, retry khi không phải 2xx. SePay **không gửi được tới URL `http://`** (trả 403 trước khi tới server), nên bắt buộc dùng HTTPS.

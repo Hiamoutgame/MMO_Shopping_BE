@@ -1,0 +1,22 @@
+# Production stack dùng Postgres managed (Neon): chỉ chạy backend, không có container DB.
+# Usage:  docker compose -f docker-compose.neon.yml up -d --build --wait
+# Toàn bộ biến môi trường (DATABASE_URL, secrets, SePay...) đọc từ file .env cạnh file này.
+# Migration chạy qua DATABASE_URL_UNPOOLED nếu có (Neon khuyên không chạy DDL qua pooler).
+name: mmo-shopping
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-mmo-shopping-be:local}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Luôn chạy bản build production trong container, bất kể NODE_ENV trong .env
+      NODE_ENV: production
+      PORT: '3000'
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      RUN_SEED_ADMIN: ${RUN_SEED_ADMIN:-false}
+    ports:
+      - '${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000'

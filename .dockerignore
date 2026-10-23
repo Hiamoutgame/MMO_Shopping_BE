@@ -1,0 +1,38 @@
+# ---- version control / CI ---------------------------------------------------
+.git
+.github
+.gitignore
+
+# ---- dependencies & build artifacts ----------------------------------------
+node_modules
+dist
+build
+coverage
+*.tsbuildinfo
+
+# ---- environment files & secrets (never bake these into an image) ----------
+.env
+.env.*
+!.env.example
+
+# ---- tests, e2e tooling & reports ------------------------------------------
+tests
+test-results
+playwright-report
+blob-report
+playwright.config.ts
+playwright.verify.config.ts
+src/**/*.spec.ts
+
+# ---- docs & editor config ---------------------------------------------------
+*.md
+docs
+.vscode
+.idea
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# ---- logs -------------------------------------------------------------------
+*.log
+npm-debug.log*

@@ -39,7 +39,7 @@ export class OptionalJwtAuthGuard implements CanActivate {
         },
       });
       if (session) {
-        request['user'] = payload;
+        request.user = payload;
       }
     } catch {
       return true;

@@ -45,6 +45,14 @@ export class CryptoService {
     return JSON.parse(decrypted.toString('utf8')) as T;
   }
 
+  /**
+   * Hash có khóa, luôn ra cùng kết quả cho cùng đầu vào, dùng để tra trùng
+   * một giá trị đã mã hóa (encryptJson dùng IV ngẫu nhiên nên không so được).
+   */
+  hashLookup(value: string): string {
+    return createHmac('sha256', this.lookupKey()).update(value).digest('hex');
+  }
+
   signHmac(body: Buffer | string, timestamp: string, secret?: string): string {
     return createHmac('sha256', secret || this.callbackSecret())
       .update(`${timestamp}.`)
@@ -75,6 +83,13 @@ export class CryptoService {
       'INVENTORY_ENCRYPTION_KEY',
     );
     return createHmac('sha256', raw).update('inventory').digest();
+  }
+
+  private lookupKey(): Buffer {
+    const raw = this.configService.getOrThrow<string>(
+      'INVENTORY_ENCRYPTION_KEY',
+    );
+    return createHmac('sha256', raw).update('lookup').digest();
   }
 
   private callbackSecret(): string {

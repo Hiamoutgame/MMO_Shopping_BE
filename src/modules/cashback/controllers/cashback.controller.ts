@@ -27,7 +27,7 @@ import {
 import { CashbackService } from '../services/cashback.service';
 
 @ApiTags('cashback')
-@Controller('api/v1/cashback')
+@Controller('v1/cashback')
 export class CashbackPublicController {
   constructor(private readonly cashbackService: CashbackService) {}
 
@@ -39,7 +39,7 @@ export class CashbackPublicController {
 }
 
 @ApiTags('cashback')
-@Controller('api/v1/cashback')
+@Controller('v1/cashback')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class CashbackController {

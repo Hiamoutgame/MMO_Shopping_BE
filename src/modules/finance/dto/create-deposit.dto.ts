@@ -1,29 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsNumberString,
-  IsOptional,
-  IsString,
-  Length,
-} from 'class-validator';
-import { PaymentProvider } from '../enums/payment-provider.enum';
+import { Matches } from 'class-validator';
 
 export class CreateDepositDto {
-  @ApiProperty()
-  @IsNumberString()
+  /** Số tiền VND nguyên; min/max kiểm tra ở service theo cấu hình. */
+  @ApiProperty({ example: '50000' })
+  @Matches(/^\d{1,13}$/, { message: 'amount must be a whole VND number.' })
   amount!: string;
-
-  @ApiProperty({ default: 'VND' })
-  @IsOptional()
-  @IsString()
-  @Length(3, 3)
-  currency?: string = 'VND';
-
-  @ApiProperty({
-    enum: PaymentProvider,
-    default: PaymentProvider.BANK_TRANSFER,
-  })
-  @IsOptional()
-  @IsEnum(PaymentProvider)
-  provider?: PaymentProvider = PaymentProvider.BANK_TRANSFER;
 }

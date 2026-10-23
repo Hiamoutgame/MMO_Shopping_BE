@@ -1,0 +1,269 @@
+# API V1 Design
+
+Thư mục này lưu đặc tả thiết kế API V1 cho MMO Shopping. Backend đã có controller NestJS; cần đối chiếu source và test để biết hợp đồng nào được thực thi. Mục lục không phải bản liệt kê đầy đủ mọi module mở rộng đang được nạp.
+
+> **Đọc trước — 23/10/2026:** [API shop một chủ](single-owner-shop.md) giải thích admin là chủ shop có quyền quản lý kho, API seller cũ cần ngừng và các khác biệt code/docs. Thiết kế đích chỉ có `USER`/`ADMIN`; xem [nghiệp vụ](../business/single-owner-shop.md), [plan](../plan/single-owner-shop.md), [rule](../rule/business.md). Đợt này sửa docs, chưa thay hành vi API.
+
+## Nguồn tham chiếu
+
+- [User stories](../database/userStory.md)
+- [Entities](../database/entities.md)
+- [Schema rules](../rule/schema.md)
+- [Helper rules](../rule/helper.md)
+- [Backend structure](../structure/BE.md)
+- [API conventions](conventions.md)
+
+## Quy ước nhanh
+
+- Base URL: `/api/v1`.
+- Auth: JWT Bearer cho User/Admin; callback dùng signature/timestamp/idempotency, không dùng JWT.
+- Envelope: `success`, `data`, `message`, `errorCode`.
+- Pagination: `items`, `total`, `page`, `pageSize`, `totalPages`.
+- UUID là string, datetime ISO 8601, money là decimal string, currency mặc định `VND`.
+- Không trả hash mật khẩu, hash refresh token, encrypted inventory payload, tool credentials hoặc delivery payload ngoài quyền sở hữu.
+
+## Mục lục endpoint
+
+### identity
+
+| Method   | URL                           | File                                                                | Mô tả                             | User stories           |
+| :------- | :---------------------------- | :------------------------------------------------------------------ | :-------------------------------- | :--------------------- |
+| `POST`   | `/api/v1/auth/register`       | [POST_register.md](identity/POST_register.md)                       | Đăng ký tài khoản                 | `US-USR-01`            |
+| `POST`   | `/api/v1/auth/login`          | [POST_login.md](identity/POST_login.md)                             | Đăng nhập                         | `US-USR-02`            |
+| `POST`   | `/api/v1/auth/refresh`        | [POST_refresh.md](identity/POST_refresh.md)                         | Làm mới access token              | `US-USR-03`            |
+| `POST`   | `/api/v1/auth/logout`         | [POST_logout.md](identity/POST_logout.md)                           | Đăng xuất session hiện tại        | `US-USR-04, US-ADM-12` |
+| `POST`   | `/api/v1/auth/logout-all`     | [POST_logout_all.md](identity/POST_logout_all.md)                   | Đăng xuất mọi thiết bị            | `US-USR-04, US-ADM-12` |
+| `GET`    | `/api/v1/auth/me`             | [GET_me.md](identity/GET_me.md)                                     | Lấy thông tin người dùng hiện tại | `US-USR-02`            |
+| `GET`    | `/api/v1/admin/accounts`      | [GET_admin_accounts.md](identity/GET_admin_accounts.md)             | Admin liệt kê account             | `US-ADM-03`            |
+| `POST`   | `/api/v1/admin/accounts`      | [POST_admin_accounts.md](identity/POST_admin_accounts.md)           | Admin tạo account                 | `US-ADM-03`            |
+| `GET`    | `/api/v1/admin/accounts/{id}` | [GET_admin_accounts_id.md](identity/GET_admin_accounts_id.md)       | Admin xem account                 | `US-ADM-03`            |
+| `PATCH`  | `/api/v1/admin/accounts/{id}` | [PATCH_admin_accounts_id.md](identity/PATCH_admin_accounts_id.md)   | Admin cập nhật account            | `US-ADM-03`            |
+| `DELETE` | `/api/v1/admin/accounts/{id}` | [DELETE_admin_accounts_id.md](identity/DELETE_admin_accounts_id.md) | Admin xóa mềm account             | `US-ADM-03`            |
+| `GET`    | `/api/v1/admin/roles`         | [GET_admin_roles.md](identity/GET_admin_roles.md)                   | Admin liệt kê role                | `US-ADM-03`            |
+
+### catalog
+
+| Method   | URL                                    | File                                                                             | Mô tả                     | User stories           |
+| :------- | :------------------------------------- | :------------------------------------------------------------------------------- | :------------------------ | :--------------------- |
+| `GET`    | `/api/v1/categories`                   | [GET_categories.md](catalog/GET_categories.md)                                   | Danh sách category public | `US-USR-05, US-USR-07` |
+| `GET`    | `/api/v1/products`                     | [GET_products.md](catalog/GET_products.md)                                       | Danh sách sản phẩm public | `US-USR-05, US-USR-07` |
+| `GET`    | `/api/v1/products/{id}`                | [GET_products_id.md](catalog/GET_products_id.md)                                 | Chi tiết sản phẩm public  | `US-USR-06`            |
+| `GET`    | `/api/v1/admin/categories`             | [GET_admin_categories.md](catalog/GET_admin_categories.md)                       | Admin liệt kê category    | `US-ADM-01`            |
+| `POST`   | `/api/v1/admin/categories`             | [POST_admin_categories.md](catalog/POST_admin_categories.md)                     | Admin tạo category        | `US-ADM-01`            |
+| `GET`    | `/api/v1/admin/categories/{id}`        | [GET_admin_categories_id.md](catalog/GET_admin_categories_id.md)                 | Admin xem category        | `US-ADM-01`            |
+| `PATCH`  | `/api/v1/admin/categories/{id}`        | [PATCH_admin_categories_id.md](catalog/PATCH_admin_categories_id.md)             | Admin cập nhật category   | `US-ADM-01`            |
+| `DELETE` | `/api/v1/admin/categories/{id}`        | [DELETE_admin_categories_id.md](catalog/DELETE_admin_categories_id.md)           | Admin xóa category        | `US-ADM-01`            |
+| `GET`    | `/api/v1/admin/products`               | [GET_admin_products.md](catalog/GET_admin_products.md)                           | Admin liệt kê product     | `US-ADM-01`            |
+| `POST`   | `/api/v1/admin/products`               | [POST_admin_products.md](catalog/POST_admin_products.md)                         | Admin tạo product         | `US-ADM-01`            |
+| `GET`    | `/api/v1/admin/products/{id}`          | [GET_admin_products_id.md](catalog/GET_admin_products_id.md)                     | Admin xem product         | `US-ADM-01`            |
+| `PATCH`  | `/api/v1/admin/products/{id}`          | [PATCH_admin_products_id.md](catalog/PATCH_admin_products_id.md)                 | Admin cập nhật product    | `US-ADM-01`            |
+| `DELETE` | `/api/v1/admin/products/{id}`          | [DELETE_admin_products_id.md](catalog/DELETE_admin_products_id.md)               | Admin xóa product         | `US-ADM-01`            |
+| `POST`   | `/api/v1/admin/products/{id}/variants` | [POST_admin_products_id_variants.md](catalog/POST_admin_products_id_variants.md) | Admin tạo variant         | `US-ADM-01`            |
+| `PATCH`  | `/api/v1/admin/variants/{id}`          | [PATCH_admin_variants_id.md](catalog/PATCH_admin_variants_id.md)                 | Admin cập nhật variant    | `US-ADM-01`            |
+| `DELETE` | `/api/v1/admin/variants/{id}`          | [DELETE_admin_variants_id.md](catalog/DELETE_admin_variants_id.md)               | Admin xóa variant         | `US-ADM-01`            |
+
+### inventory
+
+| Method  | URL                                  | File                                                                             | Mô tả                    | User stories |
+| :------ | :----------------------------------- | :------------------------------------------------------------------------------- | :----------------------- | :----------- |
+| `GET`   | `/api/v1/admin/inventory-items`      | [GET_admin_inventory_items.md](inventory/GET_admin_inventory_items.md)           | Admin liệt kê inventory  | `US-ADM-02`  |
+| `POST`  | `/api/v1/admin/inventory-items`      | [POST_admin_inventory_items.md](inventory/POST_admin_inventory_items.md)         | Admin tạo inventory      | `US-ADM-02`  |
+| `GET`   | `/api/v1/admin/inventory-items/{id}` | [GET_admin_inventory_items_id.md](inventory/GET_admin_inventory_items_id.md)     | Admin xem inventory      | `US-ADM-02`  |
+| `PATCH` | `/api/v1/admin/inventory-items/{id}` | [PATCH_admin_inventory_items_id.md](inventory/PATCH_admin_inventory_items_id.md) | Admin cập nhật inventory | `US-ADM-02`  |
+
+### shopping
+
+| Method   | URL                             | File                                                                      | Mô tả               | User stories |
+| :------- | :------------------------------ | :------------------------------------------------------------------------ | :------------------ | :----------- |
+| `GET`    | `/api/v1/cart`                  | [GET_cart.md](shopping/GET_cart.md)                                       | Xem giỏ hàng        | `US-USR-10`  |
+| `POST`   | `/api/v1/cart/items`            | [POST_cart_items.md](shopping/POST_cart_items.md)                         | Thêm item vào cart  | `US-USR-10`  |
+| `PATCH`  | `/api/v1/cart/items/{id}`       | [PATCH_cart_items_id.md](shopping/PATCH_cart_items_id.md)                 | Cập nhật cart item  | `US-USR-10`  |
+| `DELETE` | `/api/v1/cart/items/{id}`       | [DELETE_cart_items_id.md](shopping/DELETE_cart_items_id.md)               | Xóa cart item       | `US-USR-10`  |
+| `GET`    | `/api/v1/favorites`             | [GET_favorites.md](shopping/GET_favorites.md)                             | Danh sách yêu thích | `US-USR-08`  |
+| `POST`   | `/api/v1/favorites`             | [POST_favorites.md](shopping/POST_favorites.md)                           | Thêm favorite       | `US-USR-08`  |
+| `DELETE` | `/api/v1/favorites/{productId}` | [DELETE_favorites_product_id.md](shopping/DELETE_favorites_product_id.md) | Xóa favorite        | `US-USR-08`  |
+| `POST`   | `/api/v1/product-views`         | [POST_product_views.md](shopping/POST_product_views.md)                   | Ghi nhận lượt xem   | `US-USR-09`  |
+
+### commerce
+
+| Method   | URL                                | File                                                                        | Mô tả                           | User stories           |
+| :------- | :--------------------------------- | :-------------------------------------------------------------------------- | :------------------------------ | :--------------------- |
+| `POST`   | `/api/v1/vouchers/validate`        | [POST_vouchers_validate.md](commerce/POST_vouchers_validate.md)             | Validate voucher                | `US-USR-13`            |
+| `POST`   | `/api/v1/checkout`                 | [POST_checkout.md](commerce/POST_checkout.md)                               | Checkout cart                   | `US-USR-12, US-USR-13` |
+| `GET`    | `/api/v1/orders`                   | [GET_orders.md](commerce/GET_orders.md)                                     | Lịch sử order của user          | `US-USR-14`            |
+| `GET`    | `/api/v1/orders/{id}`              | [GET_orders_id.md](commerce/GET_orders_id.md)                               | Chi tiết order của user         | `US-USR-15`            |
+| `GET`    | `/api/v1/admin/orders`             | [GET_admin_orders.md](commerce/GET_admin_orders.md)                         | Admin liệt kê order             | `US-ADM-04`            |
+| `GET`    | `/api/v1/admin/orders/{id}`        | [GET_admin_orders_id.md](commerce/GET_admin_orders_id.md)                   | Admin xem order                 | `US-ADM-04`            |
+| `PATCH`  | `/api/v1/admin/orders/{id}/status` | [PATCH_admin_orders_id_status.md](commerce/PATCH_admin_orders_id_status.md) | Admin cập nhật trạng thái order | `US-ADM-04`            |
+| `POST`   | `/api/v1/admin/orders/{id}/refund` | [POST_admin_orders_id_refund.md](commerce/POST_admin_orders_id_refund.md)   | Admin hoàn tiền order           | `US-ADM-04, US-ADM-05` |
+| `GET`    | `/api/v1/admin/vouchers`           | [GET_admin_vouchers.md](commerce/GET_admin_vouchers.md)                     | Admin liệt kê voucher           | `US-USR-13`            |
+| `POST`   | `/api/v1/admin/vouchers`           | [POST_admin_vouchers.md](commerce/POST_admin_vouchers.md)                   | Admin tạo voucher               | `US-USR-13`            |
+| `GET`    | `/api/v1/admin/vouchers/{id}`      | [GET_admin_vouchers_id.md](commerce/GET_admin_vouchers_id.md)               | Admin xem voucher               | `US-USR-13`            |
+| `PATCH`  | `/api/v1/admin/vouchers/{id}`      | [PATCH_admin_vouchers_id.md](commerce/PATCH_admin_vouchers_id.md)           | Admin cập nhật voucher          | `US-USR-13`            |
+| `DELETE` | `/api/v1/admin/vouchers/{id}`      | [DELETE_admin_vouchers_id.md](commerce/DELETE_admin_vouchers_id.md)         | Admin xóa voucher               | `US-USR-13`            |
+
+### finance
+
+| Method | URL                                              | File                                                                                 | Mô tả                             | User stories           |
+| :----- | :----------------------------------------------- | :----------------------------------------------------------------------------------- | :-------------------------------- | :--------------------- |
+| `GET`  | `/api/v1/wallet`                                 | [GET_wallet.md](finance/GET_wallet.md)                                               | Xem ví                            | `US-USR-11, US-USR-14` |
+| `POST` | `/api/v1/deposits`                               | [POST_deposits.md](finance/POST_deposits.md)                                         | Tạo giao dịch nạp tiền            | `US-USR-11`            |
+| `POST` | `/api/v1/callbacks/payment-providers/{provider}` | [POST_callbacks_payment_provider.md](finance/POST_callbacks_payment_provider.md)     | Payment provider callback         | `US-USR-11`            |
+| `GET`  | `/api/v1/wallet-transactions`                    | [GET_wallet_transactions.md](finance/GET_wallet_transactions.md)                     | Lịch sử giao dịch ví              | `US-USR-14`            |
+| `GET`  | `/api/v1/admin/payment-transactions`             | [GET_admin_payment_transactions.md](finance/GET_admin_payment_transactions.md)       | Admin liệt kê payment transaction | `US-ADM-05`            |
+| `GET`  | `/api/v1/admin/payment-transactions/{id}`        | [GET_admin_payment_transactions_id.md](finance/GET_admin_payment_transactions_id.md) | Admin xem payment transaction     | `US-ADM-05`            |
+| `GET`  | `/api/v1/admin/wallet-ledgers`                   | [GET_admin_wallet_ledgers.md](finance/GET_admin_wallet_ledgers.md)                   | Admin liệt kê wallet ledger       | `US-ADM-05`            |
+
+### integration
+
+| Method   | URL                                                           | File                                                                                                                               | Mô tả                        | User stories |
+| :------- | :------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------- | :--------------------------- | :----------- |
+| `GET`    | `/api/v1/admin/integration-endpoints`                         | [GET_admin_integration_endpoints.md](integration/GET_admin_integration_endpoints.md)                                               | Admin liệt kê tool endpoint  | `US-ADM-07`  |
+| `POST`   | `/api/v1/admin/integration-endpoints`                         | [POST_admin_integration_endpoints.md](integration/POST_admin_integration_endpoints.md)                                             | Admin tạo tool endpoint      | `US-ADM-07`  |
+| `GET`    | `/api/v1/admin/integration-endpoints/{id}`                    | [GET_admin_integration_endpoints_id.md](integration/GET_admin_integration_endpoints_id.md)                                         | Admin xem tool endpoint      | `US-ADM-07`  |
+| `PATCH`  | `/api/v1/admin/integration-endpoints/{id}`                    | [PATCH_admin_integration_endpoints_id.md](integration/PATCH_admin_integration_endpoints_id.md)                                     | Admin cập nhật tool endpoint | `US-ADM-07`  |
+| `DELETE` | `/api/v1/admin/integration-endpoints/{id}`                    | [DELETE_admin_integration_endpoints_id.md](integration/DELETE_admin_integration_endpoints_id.md)                                   | Admin xóa tool endpoint      | `US-ADM-07`  |
+| `POST`   | `/api/v1/admin/integration-endpoints/{id}/test`               | [POST_admin_integration_endpoints_id_test.md](integration/POST_admin_integration_endpoints_id_test.md)                             | Admin test tool endpoint     | `US-ADM-07`  |
+| `POST`   | `/api/v1/admin/integration-endpoints/{id}/rotate-credentials` | [POST_admin_integration_endpoints_id_rotate_credentials.md](integration/POST_admin_integration_endpoints_id_rotate_credentials.md) | Admin rotate credentials     | `US-ADM-07`  |
+
+### automation
+
+| Method | URL                                              | File                                                                                                    | Mô tả                              | User stories           |
+| :----- | :----------------------------------------------- | :------------------------------------------------------------------------------------------------------ | :--------------------------------- | :--------------------- |
+| `POST` | `/api/v1/support-code-requests`                  | [POST_support_code_requests.md](automation/POST_support_code_requests.md)                               | Tạo support-code request           | `US-USR-16`            |
+| `GET`  | `/api/v1/support-code-requests`                  | [GET_support_code_requests.md](automation/GET_support_code_requests.md)                                 | Danh sách support-code request     | `US-USR-17`            |
+| `GET`  | `/api/v1/support-code-requests/{id}`             | [GET_support_code_requests_id.md](automation/GET_support_code_requests_id.md)                           | Chi tiết support-code request      | `US-USR-17`            |
+| `POST` | `/api/v1/support-code-requests/{id}/pay`         | [POST_support_code_requests_id_pay.md](automation/POST_support_code_requests_id_pay.md)                 | Pay support-code request           | `US-USR-16`            |
+| `POST` | `/api/v1/callbacks/tools/{endpointCode}`         | [POST_callbacks_tools_id.md](automation/POST_callbacks_tools_id.md)                                     | Tool callback                      | `US-USR-17, US-ADM-06` |
+| `GET`  | `/api/v1/admin/support-code-requests`            | [GET_admin_support_code_requests.md](automation/GET_admin_support_code_requests.md)                     | Admin liệt kê support-code request | `US-ADM-06`            |
+| `GET`  | `/api/v1/admin/support-code-requests/{id}`       | [GET_admin_support_code_requests_id.md](automation/GET_admin_support_code_requests_id.md)               | Admin xem support-code request     | `US-ADM-06`            |
+| `POST` | `/api/v1/admin/support-code-requests/{id}/retry` | [POST_admin_support_code_requests_id_retry.md](automation/POST_admin_support_code_requests_id_retry.md) | Admin retry dispatch lỗi           | `US-ADM-06`            |
+
+### support
+
+| Method  | URL                                  | File                                                                           | Mô tả                            | User stories |
+| :------ | :----------------------------------- | :----------------------------------------------------------------------------- | :------------------------------- | :----------- |
+| `POST`  | `/api/v1/tickets`                    | [POST_tickets.md](support/POST_tickets.md)                                     | User tạo ticket                  | `US-USR-18`  |
+| `GET`   | `/api/v1/tickets`                    | [GET_tickets.md](support/GET_tickets.md)                                       | User liệt kê ticket              | `US-USR-18`  |
+| `GET`   | `/api/v1/tickets/{id}`               | [GET_tickets_id.md](support/GET_tickets_id.md)                                 | User xem ticket                  | `US-USR-18`  |
+| `GET`   | `/api/v1/tickets/{id}/messages`      | [GET_tickets_id_messages.md](support/GET_tickets_id_messages.md)               | User poll messages               | `US-USR-18`  |
+| `POST`  | `/api/v1/tickets/{id}/messages`      | [POST_tickets_id_messages.md](support/POST_tickets_id_messages.md)             | User gửi message                 | `US-USR-18`  |
+| `GET`   | `/api/v1/admin/tickets`              | [GET_admin_tickets.md](support/GET_admin_tickets.md)                           | Admin liệt kê ticket             | `US-ADM-08`  |
+| `GET`   | `/api/v1/admin/tickets/{id}`         | [GET_admin_tickets_id.md](support/GET_admin_tickets_id.md)                     | Admin xem ticket                 | `US-ADM-08`  |
+| `POST`  | `/api/v1/admin/tickets/{id}/reply`   | [POST_admin_tickets_id_reply.md](support/POST_admin_tickets_id_reply.md)       | Admin trả lời ticket             | `US-ADM-08`  |
+| `PATCH` | `/api/v1/admin/tickets/{id}/status`  | [PATCH_admin_tickets_id_status.md](support/PATCH_admin_tickets_id_status.md)   | Admin cập nhật trạng thái ticket | `US-ADM-08`  |
+| `POST`  | `/api/v1/warranty-claims`            | [POST_warranty_claims.md](support/POST_warranty_claims.md)                     | User tạo warranty claim          | `US-USR-19`  |
+| `GET`   | `/api/v1/warranty-claims`            | [GET_warranty_claims.md](support/GET_warranty_claims.md)                       | User liệt kê warranty claim      | `US-USR-19`  |
+| `GET`   | `/api/v1/warranty-claims/{id}`       | [GET_warranty_claims_id.md](support/GET_warranty_claims_id.md)                 | User xem warranty claim          | `US-USR-19`  |
+| `GET`   | `/api/v1/admin/warranty-claims`      | [GET_admin_warranty_claims.md](support/GET_admin_warranty_claims.md)           | Admin liệt kê warranty claim     | `US-ADM-09`  |
+| `GET`   | `/api/v1/admin/warranty-claims/{id}` | [GET_admin_warranty_claims_id.md](support/GET_admin_warranty_claims_id.md)     | Admin xem warranty claim         | `US-ADM-09`  |
+| `PATCH` | `/api/v1/admin/warranty-claims/{id}` | [PATCH_admin_warranty_claims_id.md](support/PATCH_admin_warranty_claims_id.md) | Admin xử lý warranty claim       | `US-ADM-09`  |
+
+### system
+
+| Method | URL                                | File                                                                      | Mô tả                    | User stories                                            |
+| :----- | :--------------------------------- | :------------------------------------------------------------------------ | :----------------------- | :------------------------------------------------------ |
+| `GET`  | `/api/v1/admin/dashboard/overview` | [GET_admin_dashboard_overview.md](system/GET_admin_dashboard_overview.md) | Admin dashboard overview | `US-ADM-11`                                             |
+| `GET`  | `/api/v1/admin/reports/summary`    | [GET_admin_reports_summary.md](system/GET_admin_reports_summary.md)       | Admin summary report     | `US-ADM-10`                                             |
+| `GET`  | `/api/v1/admin/audit-logs`         | [GET_admin_audit_logs.md](system/GET_admin_audit_logs.md)                 | Admin audit log list     | `US-ADM-03, US-ADM-04, US-ADM-05, US-ADM-07, US-ADM-09` |
+
+### chung-suc (tiếp sức mã mời)
+
+Module bổ sung ngoài user-story V1 gốc. Response theo envelope V1. Khách gửi mã mời của mình trong game kèm số tài khoản hỗ trợ; tài khoản của Shop nhập mã đó để khách đủ lượt mời. Mỗi campaign là một sự kiện game; `targetQuantity` là số tài khoản hỗ trợ tối đa cho **mỗi mã mời**.
+
+Gửi mã chỉ tạo yêu cầu `PENDING` với đơn giá đã chụp từ price engine; chưa gọi tool, chưa tạo order và chưa trừ ví.
+
+| Method   | URL                                          | Quyền         | Mô tả                                                                 |
+| :------- | :------------------------------------------- | :------------ | :-------------------------------------------------------------------- |
+| `GET`    | `/api/v1/campaigns`                          | Public        | Danh sách campaign                                                    |
+| `GET`    | `/api/v1/campaigns/active`                   | Public        | Campaign `ACTIVE` đang trong khoảng thời gian chạy                    |
+| `GET`    | `/api/v1/campaigns/{id}`                     | Public        | Chi tiết campaign                                                     |
+| `GET`    | `/api/v1/campaigns/by-slug/{slug}`           | Public        | Chi tiết campaign theo slug                                           |
+| `GET`    | `/api/v1/campaigns/{id}/progress`            | Public        | `participantCount`, `totalQuantity` của các yêu cầu chưa hủy          |
+| `POST`   | `/api/v1/campaigns/{id}/join`                | User (JWT)    | Gửi mã mời; account lấy từ JWT, body `{ inviteCode, quantity }`       |
+| `GET`    | `/api/v1/campaigns/requests/me`              | User (JWT)    | 50 yêu cầu gần nhất của chính mình                                    |
+| `POST`   | `/api/v1/campaigns/requests/{requestId}/cancel` | User (JWT) | Hủy yêu cầu của mình khi còn `PENDING`                                |
+| `POST`   | `/api/v1/campaigns`                          | Admin         | Tạo campaign, trạng thái ban đầu `DRAFT`                              |
+| `PATCH`  | `/api/v1/campaigns/{id}`                     | Admin         | Sửa tên, mô tả, ảnh, số tối đa mỗi mã, thời gian, rewards             |
+| `POST`   | `/api/v1/campaigns/{id}/activate`            | Admin         | `DRAFT`/`UPCOMING`/`PAUSED` → `ACTIVE` (hoặc `UPCOMING` nếu chưa tới giờ) |
+| `POST`   | `/api/v1/campaigns/{id}/pause`               | Admin         | `UPCOMING`/`ACTIVE` → `PAUSED`                                        |
+| `POST`   | `/api/v1/campaigns/{id}/end`                 | Admin         | `UPCOMING`/`ACTIVE`/`PAUSED` → `ENDED`                                |
+| `POST`   | `/api/v1/campaigns/{id}/close`               | Admin         | Mọi trạng thái trừ `CLOSED` → `CLOSED`                                |
+| `DELETE` | `/api/v1/campaigns/{id}`                     | Admin         | Xóa mềm campaign                                                      |
+| `GET`    | `/api/v1/campaigns/{id}/participants`        | Admin         | Danh sách yêu cầu (account chỉ có `id`, `email`, `name`)              |
+| `PATCH`  | `/api/v1/campaigns/requests/{requestId}/status` | Admin      | Đổi trạng thái yêu cầu theo luồng xử lý, body `{ status, note? }`     |
+
+Quy tắc của `join`:
+
+- `inviteCode` bắt buộc, được trim, tối đa 100 ký tự. `quantity` từ 1 tới `targetQuantity`.
+- Campaign phải `ACTIVE` và đang trong khoảng thời gian chạy; sản phẩm của campaign phải có giá, nếu không trả `400 CAMPAIGN_PRICE_NOT_SET`.
+- Một mã mời chỉ có một yêu cầu đang mở (`PENDING`/`CHECKING`/`PROCESSING`) trong mỗi campaign, bất kể account nào gửi; trùng thì trả `409 INVITE_CODE_ALREADY_PENDING`.
+- Admin đổi trạng thái yêu cầu: `PENDING` → `CHECKING`/`PROCESSING`/`FAILED`; `CHECKING` → `PROCESSING`/`FAILED`; `PROCESSING` → `SUCCESS`/`PARTIAL_SUCCESS`/`FAILED`. Sai luồng, yêu cầu đã hủy hoặc đã đóng trả `409 REQUEST_STATUS_TRANSITION_NOT_ALLOWED`. Mỗi lần đổi được lưu vào `statusHistory` (`from`, `to`, `at`, `by`, `note`). Chưa tạo đơn hay trừ ví.
+- Mã mời lưu dạng hash (để tra trùng) và mã hóa AES-256-GCM. Response chỉ trả `inviteCodeMasked` (4 ký tự cuối).
+
+Trạng thái yêu cầu: `PENDING`, `CHECKING`, `PROCESSING`, `SUCCESS`, `PARTIAL_SUCCESS`, `FAILED`, `CANCELLED`. Khách tạo `PENDING` và hủy thành `CANCELLED`; admin chuyển các trạng thái còn lại bằng tay theo luồng ở trên. Bước gọi tool và trừ ví chưa có. Hủy một yêu cầu không còn `PENDING` trả `409 REQUEST_NOT_CANCELLABLE`.
+
+`status`, `productId`, `slug` của campaign không sửa được qua `PATCH`. `COMPLETED` không còn được gán tự động.
+
+### cashback façade (Hoàn Phí 247)
+
+Đây là integration bổ sung, không thay đổi user-story V1 gốc. Mọi endpoint nghiệp vụ bên dưới dùng JWT MMO và backend giữ token provider đã mã hóa theo từng account.
+
+| Method | URL | Mô tả |
+| :-- | :-- | :-- |
+| `GET` | `/api/v1/cashback/config` | Cấu hình nghiệp vụ công khai, cache 5 phút |
+| `GET/POST/DELETE` | `/api/v1/cashback/connection/*` | Liên kết, challenge và ngắt tài khoản provider |
+| `POST` | `/api/v1/cashback/link` | Tạo affiliate link hoàn phí |
+| `GET` | `/api/v1/cashback/account` | Tổng quan account/ví provider |
+| `GET` | `/api/v1/cashback/orders[/:id]` | Danh sách và chi tiết đơn hoàn phí |
+| `GET/POST` | `/api/v1/cashback/withdrawals` | Danh sách và tạo yêu cầu rút |
+| `POST` | `/api/v1/cashback/withdrawals/otp` | Gửi OTP rút tiền |
+| `GET/POST/DELETE` | `/api/v1/cashback/payment-accounts/*` | Sổ tài khoản nhận tiền |
+| `GET` | `/api/v1/cashback/referrals` | Referral F1/F2 và hoa hồng |
+| `GET` | `/api/v1/cashback/balance-logs` | Biến động số dư |
+
+Provider error được chuẩn hóa về envelope V1. Riêng provider `401` trả `409 CASHBACK_REAUTH_REQUIRED`, không dùng `401` để tránh kích hoạt refresh JWT MMO.
+
+## Ma trận truy vết user story
+
+| User story  | Endpoint đáp ứng                                                                                                                                    |
+| :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `US-USR-01` | identity/POST_register.md                                                                                                                           |
+| `US-USR-02` | identity/POST_login.md, identity/GET_me.md                                                                                                          |
+| `US-USR-03` | identity/POST_refresh.md                                                                                                                            |
+| `US-USR-04` | identity/POST_logout.md, identity/POST_logout_all.md                                                                                                |
+| `US-USR-05` | catalog/GET_products.md, catalog/GET_categories.md                                                                                                  |
+| `US-USR-06` | catalog/GET_products_id.md                                                                                                                          |
+| `US-USR-07` | catalog/GET_products.md                                                                                                                             |
+| `US-USR-08` | shopping/GET_favorites.md, shopping/POST_favorites.md, shopping/DELETE_favorites_product_id.md                                                      |
+| `US-USR-09` | shopping/POST_product_views.md                                                                                                                      |
+| `US-USR-10` | shopping/GET_cart.md, shopping/POST_cart_items.md, shopping/PATCH_cart_items_id.md, shopping/DELETE_cart_items_id.md                                |
+| `US-USR-11` | finance/GET_wallet.md, finance/POST_deposits.md, finance/POST_callbacks_payment_provider.md                                                         |
+| `US-USR-12` | commerce/POST_checkout.md                                                                                                                           |
+| `US-USR-13` | commerce/POST_vouchers_validate.md, commerce/POST_checkout.md, commerce/GET_admin_vouchers.md                                                       |
+| `US-USR-14` | commerce/GET_orders.md, finance/GET_wallet_transactions.md                                                                                          |
+| `US-USR-15` | commerce/GET_orders_id.md                                                                                                                           |
+| `US-USR-16` | automation/POST_support_code_requests.md, automation/POST_support_code_requests_id_pay.md                                                           |
+| `US-USR-17` | automation/GET_support_code_requests.md, automation/GET_support_code_requests_id.md, automation/POST_callbacks_tools_id.md                          |
+| `US-USR-18` | support/POST_tickets.md, support/GET_tickets.md, support/GET_tickets_id.md, support/GET_tickets_id_messages.md, support/POST_tickets_id_messages.md |
+| `US-USR-19` | support/POST_warranty_claims.md, support/GET_warranty_claims.md, support/GET_warranty_claims_id.md                                                  |
+| `US-ADM-01` | catalog admin endpoints                                                                                                                             |
+| `US-ADM-02` | inventory admin endpoints                                                                                                                           |
+| `US-ADM-03` | identity admin endpoints                                                                                                                            |
+| `US-ADM-04` | commerce admin order endpoints                                                                                                                      |
+| `US-ADM-05` | finance admin endpoints, commerce/POST_admin_orders_id_refund.md                                                                                    |
+| `US-ADM-06` | automation admin endpoints                                                                                                                          |
+| `US-ADM-07` | integration admin endpoints                                                                                                                         |
+| `US-ADM-08` | support admin ticket endpoints                                                                                                                      |
+| `US-ADM-09` | support admin warranty endpoints                                                                                                                    |
+| `US-ADM-10` | system/GET_admin_reports_summary.md                                                                                                                 |
+| `US-ADM-11` | system/GET_admin_dashboard_overview.md                                                                                                              |
+| `US-ADM-12` | identity/POST_logout.md, identity/POST_logout_all.md                                                                                                |
+
+## Checklist kiểm tra tĩnh
+
+- Mỗi file endpoint nằm trong một bounded context và tên bắt đầu bằng HTTP method hợp lệ: `GET_`, `POST_`, `PATCH_`, `DELETE_`.
+- Mỗi file có đủ mục bắt buộc: Endpoint, Mô tả, Request, Validation, Response, Ràng buộc nghiệp vụ, Idempotency, Transaction & concurrency, Dữ liệu nhạy cảm, Audit.
+- Không có endpoint rating/review trong V1.
+- README liên kết tới toàn bộ endpoint file và `conventions.md`.
+- Mỗi `US-USR-01` đến `US-USR-19` và `US-ADM-01` đến `US-ADM-12` có ít nhất một endpoint truy vết.

@@ -7,7 +7,7 @@ import { createApiResponse } from '../../../common/utils/api-response';
 import { RoleService } from '../services/role.service';
 
 @ApiTags('admin')
-@Controller('api/v1/admin/roles')
+@Controller('v1/admin/roles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()

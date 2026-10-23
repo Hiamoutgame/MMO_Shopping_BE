@@ -3,4 +3,5 @@ export enum PaymentProvider {
   MOMO = 'MOMO',
   ZALOPAY = 'ZALOPAY',
   BANK_TRANSFER = 'BANK_TRANSFER',
+  SEPAY = 'SEPAY',
 }

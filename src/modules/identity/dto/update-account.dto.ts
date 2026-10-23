@@ -1,12 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
 import { AccountStatus } from '../enums/account-status.enum';
+import { ACTIVE_ROLE_CODES } from '../../../common/auth/account-role';
 
 export class UpdateAccountDto {
   @ApiPropertyOptional({ example: 'user@example.com' })
@@ -20,7 +23,11 @@ export class UpdateAccountDto {
   @MinLength(6, { message: 'Mat khau phai tu 6 ky tu.' })
   password?: string;
 
-  @ApiPropertyOptional({ example: 'USER' })
+  @ApiPropertyOptional({ enum: ACTIVE_ROLE_CODES, example: 'USER' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
+  @IsIn(ACTIVE_ROLE_CODES)
   @IsString()
   @IsOptional()
   roleCode?: string;

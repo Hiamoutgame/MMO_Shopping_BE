@@ -21,7 +21,7 @@ import { CreateProductViewDto } from '../dto/product-view.dto';
 import { ShoppingService } from '../services/shopping.service';
 
 @ApiTags('shopping')
-@Controller('api/v1')
+@Controller('v1')
 export class ShoppingController {
   constructor(private readonly shoppingService: ShoppingService) {}
 

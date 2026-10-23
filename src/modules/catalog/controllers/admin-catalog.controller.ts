@@ -26,7 +26,7 @@ import { CreateVariantDto, UpdateVariantDto } from '../dto/variant.dto';
 import { CatalogService } from '../services/catalog.service';
 
 @ApiTags('admin')
-@Controller('api/v1/admin')
+@Controller('v1/admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @ApiBearerAuth()

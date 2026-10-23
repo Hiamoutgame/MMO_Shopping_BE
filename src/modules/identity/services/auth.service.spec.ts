@@ -111,6 +111,36 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
+    it.each([
+      ['SELLER', 'USER'],
+      ['ADMIN', 'ADMIN'],
+    ])(
+      'issues %s accounts an effective %s session',
+      async (storedRole, effectiveRole) => {
+        accountRepo.findOne.mockResolvedValue({
+          id: 'acc-existing',
+          email: 'existing@example.com',
+          passwordHash: await bcrypt.hash('secret123', 4),
+          status: AccountStatus.ACTIVE,
+          role: { code: storedRole },
+        });
+
+        const result = await service.login({
+          email: 'existing@example.com',
+          password: 'secret123',
+        });
+
+        expect(result.account.role).toBe(effectiveRole);
+        expect(jwtService.signAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            subject: 'acc-existing',
+            role: effectiveRole,
+          }),
+        );
+        expect(roleRepo.save).not.toHaveBeenCalled();
+      },
+    );
+
     it('should throw UnauthorizedException if account not found', async () => {
       accountRepo.findOne.mockResolvedValue(null);
       await expect(
@@ -137,5 +167,27 @@ describe('AuthService', () => {
       expect(res.tokens.accessToken).toBe('mock-access-token');
       expect(res.tokens.refreshToken).toBeDefined();
     });
+  });
+
+  it('returns the canonical USER role for a legacy seller profile without changing its account', async () => {
+    accountRepo.findOne.mockResolvedValue({
+      id: 'legacy-account',
+      email: 'legacy@example.com',
+      role: { id: 'legacy-role', code: 'SELLER', name: 'Seller' },
+    });
+    roleRepo.findOne.mockResolvedValue({
+      id: 'user-role',
+      code: 'USER',
+      name: 'User',
+    });
+
+    const result = await service.getMe('legacy-account');
+
+    expect(result.role).toEqual({
+      id: 'user-role',
+      code: 'USER',
+      name: 'User',
+    });
+    expect(accountRepo.save).not.toHaveBeenCalled();
   });
 });

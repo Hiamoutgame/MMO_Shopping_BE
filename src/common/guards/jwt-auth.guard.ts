@@ -11,6 +11,8 @@ import { Request } from 'express';
 import { IsNull, MoreThan, Repository } from 'typeorm';
 import { ActiveUserData } from '../decorators/current-user.decorator';
 import { AuthSession } from '../../modules/identity/entities/auth-session.entity';
+import { AccountStatus } from '../../modules/identity/enums/account-status.enum';
+import { getEffectiveRoleCode } from '../auth/account-role';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -49,12 +51,17 @@ export class JwtAuthGuard implements CanActivate {
           revokedAt: IsNull(),
           expiresAt: MoreThan(new Date()),
         },
+        relations: { account: { role: true } },
       });
-      if (!session) {
+      if (
+        !session?.account ||
+        session.account.status !== AccountStatus.ACTIVE
+      ) {
         throw new UnauthorizedException();
       }
 
-      request['user'] = payload;
+      const roleCode = getEffectiveRoleCode(session.account.role?.code);
+      request.user = { ...payload, roleCode, role: { code: roleCode } };
     } catch {
       throw new UnauthorizedException({
         success: false,

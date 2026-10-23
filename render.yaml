@@ -1,0 +1,108 @@
+# render.yaml - Render IaC Blueprint
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Usage:
+#   1. Push this file to your repo (must be at repo root or specify path)
+#   2. Go to Render Dashboard > New > Blueprint
+#   3. Connect your GitHub repo → Render reads this file
+#   4. Set SECRET env vars in the Render dashboard (marked fromDatabase or sync: false)
+#
+# After first deploy, run migrations from Render Shell:
+#   npm run typeorm:migration:run:prod
+
+services:
+  # ─── Web Service (NestJS backend) ──────────────────────────────────────────
+  - type: web
+    name: mmo-shopping-be
+    runtime: docker
+    # Render builds using your Dockerfile (targets the 'runtime' stage by default)
+    dockerfilePath: ./Dockerfile
+    # Render auto-detects the branch from your connected repo
+    autoDeployTrigger: off # CD triggers the tested commit via deploy hook
+    branch: main
+    plan: free           # change to 'starter' / 'standard' for production
+    region: singapore    # closest to Vietnam; options: oregon, ohio, frankfurt, singapore
+
+    healthCheckPath: /api
+
+    envVars:
+      # ── Runtime ────────────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      # PORT is automatically injected by Render - do not set it here
+
+      # ── Database (auto-wired from the Render Postgres below) ────────────────
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mmo-shopping-db
+          property: connectionString
+
+      # ── Migrations (runs on each deploy via entrypoint) ─────────────────────
+      - key: RUN_MIGRATIONS
+        value: "true"
+
+      # ── JWT ─────────────────────────────────────────────────────────────────
+      - key: JWT_SECRET
+        sync: false      # set manually in Render dashboard (secret)
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_TOKEN_EXPIRES_DAYS
+        value: "7"
+
+      # ── Swagger ─────────────────────────────────────────────────────────────
+      - key: SWAGGER_ENABLED
+        value: "true"
+      - key: SWAGGER_PATH
+        value: api/docs
+      - key: SWAGGER_TITLE
+        value: MMO Shopping API
+      - key: SWAGGER_DESCRIPTION
+        value: MMO Shopping Backend API
+      - key: SWAGGER_VERSION
+        value: 1.0.0
+
+      # ── Encryption keys (set manually in dashboard - secrets) ───────────────
+      - key: INVENTORY_ENCRYPTION_KEY
+        sync: false
+      - key: PAYMENT_CALLBACK_SECRET
+        sync: false
+      - key: INTEGRATION_ENCRYPTION_KEY
+        sync: false
+
+      # ── Hoanphi Integration ──────────────────────────────────────────────────
+      - key: HOANPHI_API_BASE_URL
+        value: https://hoanphi247.vn/api/v1/openapi
+      - key: HOANPHI_TIMEOUT_MS
+        value: "10000"
+
+      # ── CORS ─────────────────────────────────────────────────────────────────
+      # Set to your frontend URL, e.g. https://mmo-shopping.onrender.com
+      - key: CORS_ORIGIN
+        sync: false
+
+  # ─── Worker (optional - for background jobs / seed) ────────────────────────
+  # Uncomment if you need a one-off job for DB seeding:
+  # - type: worker
+  #   name: mmo-shopping-seed
+  #   runtime: docker
+  #   dockerfilePath: ./Dockerfile
+  #   dockerCommand: node scripts/seed-admin.js
+  #   envVars:
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: mmo-shopping-db
+  #         property: connectionString
+  #     - key: SEED_ADMIN_EMAIL
+  #       sync: false
+  #     - key: SEED_ADMIN_PASSWORD
+  #       sync: false
+  #     - key: SEED_ADMIN_NAME
+  #       value: Admin
+
+databases:
+  # ─── Render Postgres ────────────────────────────────────────────────────────
+  - name: mmo-shopping-db
+    databaseName: mmo_shopping
+    user: mmo_shopping_user
+    plan: free           # change to 'starter' for production (persistent storage)
+    region: singapore

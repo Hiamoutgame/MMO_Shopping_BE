@@ -1,0 +1,114 @@
+# Checkout cart
+
+## Endpoint
+
+- Method: `POST`
+- URL: `/api/v1/checkout`
+- Module: `commerce`
+- Auth: `User`
+- User stories: `US-USR-12, US-USR-13`
+
+## Mô tả
+
+Thanh toán cart bằng ví, áp voucher nếu có và giao inventory.
+
+> **Làm rõ 23/10/2026:** Khách mua từ shop duy nhất; không chọn seller và không chia tiền cho seller. `CommerceController.checkout()` lấy account từ token; `CommerceService.checkout()` tính từ giá variant, không gọi Price Engine, hiện chỉ giao `AUTO`. Khi admin thử mua, giỏ/ví/đơn vẫn là của account đó. Xem [API shop một chủ](../single-owner-shop.md); đoạn này là đối chiếu source, chưa phải kết quả test runtime.
+
+## Request
+
+### Path params
+
+- Không có.
+
+### Query params
+
+- Không có.
+
+### Body
+
+- `cartId?`: UUID tùy chọn; nếu gửi phải là giỏ của account hiện tại.
+- `voucherCode?`: string tùy chọn, tối đa 50 ký tự.
+- Không nhận `sellerId`, `sellerCode` hoặc giá cuối từ frontend. Nguồn: `CheckoutDto` trong `MMO_Shopping_BE/src/modules/commerce/dto/checkout.dto.ts`.
+
+### Headers
+
+- `Authorization: Bearer <accessToken>` khi Auth là `User`, `Admin` hoặc `User/Admin`.
+- `Idempotency-Key` khi mục idempotency bên dưới yêu cầu.
+- Callback dùng `X-Signature`, `X-Timestamp` và `Idempotency-Key`, không dùng JWT.
+
+## Validation
+
+- UUID phải là string UUID hợp lệ.
+- Datetime dùng ISO 8601.
+- Money dùng decimal string, không âm; transaction amount phải lớn hơn 0.
+- Enum phải dùng giá trị viết hoa đã định nghĩa trong `docs/database/entities.md`.
+- Pagination dùng `page`, `pageSize`; response list dùng `items`, `total`, `page`, `pageSize`, `totalPages`.
+
+## Response
+
+### Success `201`
+
+```json
+{
+  "success": true,
+  "data": {
+    "order": {
+      "id": "8f8f7a6e-62c7-4c2f-95bc-33d8312e7a7a"
+    }
+  },
+  "message": "OK",
+  "errorCode": null
+}
+```
+
+### Error example
+
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "Dữ liệu không hợp lệ.",
+  "errorCode": "VALIDATION_ERROR"
+}
+```
+
+### Error codes
+
+- `VALIDATION_ERROR`
+- `UNAUTHORIZED`
+- `FORBIDDEN`
+- `NOT_FOUND`
+- `CONFLICT`
+- `IDEMPOTENCY_REPLAYED`
+- `CONCURRENT_MODIFICATION`
+
+## Ràng buộc nghiệp vụ
+
+- Checkout lock wallet và inventory, snapshot giá/bảo hành, áp voucher qua `VoucherRedemption`, ghi ledger và chống bán trùng trong cùng transaction.
+- Voucher phải active, trong thời gian hiệu lực, đạt minimum amount, còn global limit và per-account limit.
+- Checkout/refund/status update của admin phải có audit; checkout/refund/retry cần `Idempotency-Key`.
+- Response phải dùng envelope chuẩn và chỉ trả dữ liệu thuộc quyền truy cập của caller.
+
+## Idempotency
+
+Client bắt buộc gửi header `Idempotency-Key`; replay hợp lệ trả lại resource đã tạo hoặc trạng thái retry trước đó.
+
+## Transaction & concurrency
+
+- Read endpoint không mở transaction dài.
+- Write endpoint phải dùng transaction khi thay đổi nhiều bảng hoặc đụng wallet, inventory, voucher, order, session, dispatch, warranty.
+- Concurrent update phải trả `409 CONCURRENT_MODIFICATION` hoặc error chuyên biệt hơn nếu phát hiện xung đột nghiệp vụ.
+
+## Dữ liệu nhạy cảm
+
+- Không trả `passwordHash`, refresh-token hash, `encryptedPayload`, tool credentials hoặc payload giao hàng của user khác.
+- Secret/config nhạy cảm phải redacted trong response và audit diff.
+
+## Audit
+
+Không bắt buộc, trừ khi service phát sinh thay đổi tiền/order do workflow nội bộ.
+
+## Liên kết
+
+- Conventions: [../conventions.md](../conventions.md)
+- Source: [../../database/userStory.md](../../database/userStory.md), [../../database/entities.md](../../database/entities.md)

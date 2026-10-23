@@ -7,6 +7,7 @@ import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
+import sepayConfig from './config/sepay.config';
 import { validate } from './config/env.validation';
 import { AutomationModule } from './modules/automation/automation.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -19,12 +20,26 @@ import { ShoppingModule } from './modules/shopping/shopping.module';
 import { SupportModule } from './modules/support/support.module';
 import { SystemModule } from './modules/system/system.module';
 import { CashbackModule } from './modules/cashback/cashback.module';
+import { SeasonsModule } from './modules/seasons/seasons.module';
+import { ChungSucModule } from './modules/chung-suc/chung-suc.module';
+import { PricingModule } from './modules/pricing/pricing.module';
+import { PackagesModule } from './modules/packages/packages.module';
+import { SellersModule } from './modules/sellers/sellers.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
+import { PurchaseModule } from './modules/purchase/purchase.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { SeedModule } from './database/seeds/seed.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig],
+      envFilePath: [
+        `.env.${process.env.NODE_ENV ?? 'development'}.local`,
+        `.env.${process.env.NODE_ENV ?? 'development'}`,
+        '.env',
+      ],
+      load: [appConfig, databaseConfig, jwtConfig, sepayConfig],
       validate,
     }),
     TypeOrmModule.forRootAsync({
@@ -44,6 +59,15 @@ import { CashbackModule } from './modules/cashback/cashback.module';
     SupportModule,
     SystemModule,
     CashbackModule,
+    SeasonsModule,
+    ChungSucModule,
+    PricingModule,
+    PackagesModule,
+    SellersModule,
+    CouponsModule,
+    PurchaseModule,
+    AnalyticsModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService, ApiExceptionFilter],

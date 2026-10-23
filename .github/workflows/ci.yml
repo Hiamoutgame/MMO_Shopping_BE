@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Jest
+        run: npm test -- --ci --coverage
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Compile TypeScript
+        run: npm run build
+      - name: Verify production entrypoint
+        run: test -f dist/main.js
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [lint, test, build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: mmo-shopping-be:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Validate Compose files
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.dev.yml config --quiet
+      - name: Start stack with fresh PostgreSQL and run migrations
+        env:
+          APP_IMAGE: mmo-shopping-be:ci
+        run: docker compose up -d --no-build --wait --wait-timeout 180
+      - name: Smoke test production API and migration dependencies
+        run: |
+          curl --fail --retry 5 --retry-connrefused http://localhost:3000/api
+          curl --fail http://localhost:3000/api/v1/products
+          docker compose exec -T app npm run typeorm:migration:show:prod
+          docker compose exec -T app node -e "if (process.getuid() === 0) process.exit(1)"
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Clean up ephemeral CI stack
+        if: always()
+        run: docker compose down --volumes

@@ -17,6 +17,10 @@ import { Wallet } from './wallet.entity';
 @Entity('wallet_transactions')
 @Check('chk_wallet_transactions_amount', 'amount > 0')
 @Check('chk_wallet_transactions_balance_after', 'balance_after >= 0')
+@Check(
+  'chk_wallet_transactions_balance_math',
+  `(type = 'CREDIT' AND balance_after = balance_before + amount) OR (type = 'DEBIT' AND balance_after = balance_before - amount)`,
+)
 @Index('idx_wallet_transactions_wallet_id', ['walletId'])
 @Index(
   'uq_wallet_transactions_payment_transaction_id',
@@ -87,6 +91,15 @@ export class WalletTransaction extends UuidEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string | null;
+
+  /** Identity do Postgres cấp; chỉ đọc. */
+  @Column({
+    name: 'ledger_seq',
+    type: 'bigint',
+    insert: false,
+    update: false,
+  })
+  ledgerSeq!: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

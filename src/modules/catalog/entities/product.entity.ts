@@ -27,4 +27,25 @@ export class Product extends SoftDeletableEntity {
 
   @Column({ type: 'jsonb', nullable: true })
   images?: string[] | null;
+
+  @Column({
+    name: 'base_price',
+    type: 'numeric',
+    precision: 19,
+    scale: 4,
+    nullable: true,
+  })
+  basePrice?: string | null;
+
+  @Column({
+    name: 'minimum_selling_price',
+    type: 'numeric',
+    precision: 19,
+    scale: 4,
+    nullable: true,
+  })
+  minimumSellingPrice?: string | null;
+
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive!: boolean;
 }

@@ -1,66 +1,90 @@
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { ApiExceptionFilter } from './common/filters/api-exception.filter';
-
-interface SwaggerConfig {
-  enabled: boolean;
-  path: string;
-  title: string;
-  description: string;
-  version: string;
-}
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
-  const configService = app.get(ConfigService);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Sau Nginx: tin X-Forwarded-For để audit log ghi IP thật của client.
+  if (process.env.TRUST_PROXY) {
+    app.set(
+      'trust proxy',
+      process.env.TRUST_PROXY === 'true' ? true : process.env.TRUST_PROXY,
+    );
+  }
+
+  // Global prefix
+  app.setGlobalPrefix('api');
+
+  // CORS
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true,
+  });
+
+  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      transform: true,
       forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
-  app.useGlobalFilters(app.get(ApiExceptionFilter));
 
-  const swaggerConfig = configService.getOrThrow<SwaggerConfig>('app.swagger');
-  if (swaggerConfig.enabled) {
+  // Global exception filter
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Global logging interceptor
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  // Swagger documentation
+  if (process.env.SWAGGER_ENABLED === 'true') {
     const config = new DocumentBuilder()
-      .setTitle(swaggerConfig.title)
-      .setDescription(swaggerConfig.description)
-      .setVersion(swaggerConfig.version)
+      .setTitle(process.env.SWAGGER_TITLE || 'MMO Shopping API')
+      .setDescription(
+        process.env.SWAGGER_DESCRIPTION ||
+          'MMO Shopping Backend API with CHUNG SỨC (Group Buying) System',
+      )
+      .setVersion(process.env.SWAGGER_VERSION || '1.0.0')
       .addBearerAuth()
-      .addTag('auth')
-      .addTag('catalog')
-      .addTag('shopping')
-      .addTag('commerce')
-      .addTag('finance')
-      .addTag('automation')
-      .addTag('support')
-      .addTag('cashback')
-      .addTag('admin')
+      .addTag('Auth', 'Authentication endpoints')
+      .addTag('Seasons', 'Season/Event management')
+      .addTag('Chung Suc', 'Group buying campaigns')
+      .addTag('Pricing', 'Price calculation and rules')
+      .addTag('Packages', 'Product bundles')
+      .addTag('Coupons', 'Coupon validation and usage')
+      .addTag('Purchase', 'Purchase batches and cost management')
+      .addTag('Analytics', 'Profit tracking and test campaigns')
+      .addTag('Products', 'Product catalog')
+      .addTag('Orders', 'Order management')
       .build();
 
-    const documentFactory = () => SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup(swaggerConfig.path, app, documentFactory, {
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup(process.env.SWAGGER_PATH || 'api/docs', app, document, {
       swaggerOptions: {
         persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
       },
     });
+
+    console.log(
+      `📚 Swagger documentation: http://localhost:${process.env.PORT || 3000}/${process.env.SWAGGER_PATH || 'api/docs'}`,
+    );
   }
 
-  const port = configService.get<number>('app.port') ?? 3000;
+  const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`Server is running on ${port}`);
-  if (swaggerConfig.enabled) {
-    console.log(`Swagger docs are available at /${swaggerConfig.path}`);
-  }
+
+  console.log(`🚀 Application is running on: http://localhost:${port}/api`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
-bootstrap().catch((error) => {
-  console.error('Error starting the server:', error);
-  process.exit(1);
-});
+void bootstrap();

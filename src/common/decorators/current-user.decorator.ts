@@ -1,19 +1,28 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 export interface ActiveUserData {
-  subject: string;
+  id: string;
   email: string;
-  role: string;
-  sessionId?: string;
+  roleCode: string;
+  subject: string;
+  sessionId: string;
+  role?: {
+    code: string;
+  };
+}
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: ActiveUserData;
+  }
 }
 
 export const CurrentUser = createParamDecorator(
   (data: keyof ActiveUserData | undefined, ctx: ExecutionContext) => {
-    const request = ctx
-      .switchToHttp()
-      .getRequest<Request & { user?: ActiveUserData }>();
+    const request = ctx.switchToHttp().getRequest<Request>();
     const user = request.user;
+
     return data ? user?.[data] : user;
   },
 );

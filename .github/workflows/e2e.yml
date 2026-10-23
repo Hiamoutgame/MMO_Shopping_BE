@@ -1,0 +1,82 @@
+name: E2E API
+
+# API end-to-end tests (Playwright) against an ephemeral PostgreSQL service.
+# Called by playwright.yml, or run manually from the Actions tab.
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mmo
+          POSTGRES_PASSWORD: mmo
+          POSTGRES_DB: mmo_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mmo -d mmo_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      SEED_ADMIN_EMAIL: admin@ci.example.com
+      SEED_ADMIN_PASSWORD: CI-only-admin-password-123
+      SEED_ADMIN_NAME: CI Admin
+      PORT: '4000'
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_USERNAME: mmo
+      DB_PASSWORD: mmo
+      DB_DATABASE: mmo_e2e
+      DB_SSL: 'false'
+      JWT_SECRET: ci-only-jwt-secret
+      JWT_EXPIRES_IN: 15m
+      REFRESH_TOKEN_EXPIRES_DAYS: '7'
+      INVENTORY_ENCRYPTION_KEY: ci-only-inventory-key
+      PAYMENT_CALLBACK_SECRET: ci-only-payment-secret
+      INTEGRATION_ENCRYPTION_KEY: ci-only-integration-key
+      HOANPHI_API_BASE_URL: https://hoanphi247.vn/api/v1/openapi
+      HOANPHI_TIMEOUT_MS: '10000'
+      SWAGGER_ENABLED: 'true'
+      SWAGGER_PATH: api/docs
+      SWAGGER_TITLE: MMO Shopping API
+      SWAGGER_DESCRIPTION: MMO Shopping Backend API
+      SWAGGER_VERSION: 1.0.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run migrations
+        run: npm run typeorm:migration:run
+      - name: Seed admin
+        run: npm run seed:admin
+      - name: Seed CHUNG SUC data
+        run: npm run seed:chung-suc
+      - name: Run Playwright API tests
+        run: npx playwright test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

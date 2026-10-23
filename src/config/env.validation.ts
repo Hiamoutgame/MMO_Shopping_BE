@@ -3,7 +3,9 @@ import {
   IsBoolean,
   IsEnum,
   IsNumber,
+  IsOptional,
   IsString,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 
@@ -26,20 +28,31 @@ export class EnvironmentVariables {
   @IsNumber()
   PORT!: number;
 
+  // DATABASE_URL is used by Render (managed Postgres) and Neon.
+  // When provided, the individual DB_* fields below are NOT required.
+  @IsOptional()
   @IsString()
-  DB_HOST!: string;
+  DATABASE_URL?: string;
 
+  @ValidateIf((o: EnvironmentVariables) => !o.DATABASE_URL)
+  @IsString()
+  DB_HOST?: string;
+
+  @ValidateIf((o: EnvironmentVariables) => !o.DATABASE_URL)
   @IsNumber()
-  DB_PORT!: number;
+  DB_PORT?: number;
 
+  @ValidateIf((o: EnvironmentVariables) => !o.DATABASE_URL)
   @IsString()
-  DB_USERNAME!: string;
+  DB_USERNAME?: string;
 
+  @ValidateIf((o: EnvironmentVariables) => !o.DATABASE_URL)
   @IsString()
-  DB_PASSWORD!: string;
+  DB_PASSWORD?: string;
 
+  @ValidateIf((o: EnvironmentVariables) => !o.DATABASE_URL)
   @IsString()
-  DB_DATABASE!: string;
+  DB_DATABASE?: string;
 
   @Transform(({ value }: { value: unknown }) => toBoolean(value))
   @IsBoolean()
@@ -86,7 +99,6 @@ export function validate(config: Record<string, unknown>) {
   const validatedConfig = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   });
-  // console.log('validated config:', validatedConfig);
 
   const errors = validateSync(validatedConfig, {
     skipMissingProperties: false,

@@ -1,13 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
 import { AccountStatus } from '../enums/account-status.enum';
+import { ACTIVE_ROLE_CODES } from '../../../common/auth/account-role';
 
 export class CreateAccountDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -21,7 +24,11 @@ export class CreateAccountDto {
   @MinLength(6, { message: 'Mat khau phai tu 6 ky tu.' })
   password!: string;
 
-  @ApiProperty({ example: 'USER' })
+  @ApiProperty({ enum: ACTIVE_ROLE_CODES, example: 'USER' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.toUpperCase() : value,
+  )
+  @IsIn(ACTIVE_ROLE_CODES)
   @IsString()
   @IsNotEmpty({ message: 'roleCode la bat buoc.' })
   roleCode!: string;
